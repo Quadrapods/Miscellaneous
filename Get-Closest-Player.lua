@@ -1,3 +1,5 @@
+-- Forked from https://github.com/yesok3877/Miscellaneous/blob/master/Get-Closest-To-Cursor.lua
+
 return function()
     local a = game:GetService('Workspace')
     local b = game:GetService('Players')
