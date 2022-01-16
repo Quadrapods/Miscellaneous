@@ -1,6 +1,6 @@
 -- Forked from https://github.com/yesok3877/Miscellaneous/blob/master/Get-Closest-To-Cursor.lua
 
-return function()
+return function(x)
     local a = game:GetService('Workspace')
     local b = game:GetService('Players')
 
@@ -8,7 +8,7 @@ return function()
     local d = c:GetMouse()
 
     local e = b:GetPlayers()
-    local f, g = math.huge
+    local f, g = tonumber(x) or math.huge
 
     for i = 1, table.getn(e) do
         local h = rawget(e, i)
