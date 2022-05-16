@@ -9,11 +9,11 @@ return function(x, y)
             if (y) then
                 if (not table.find(y, v.Name)) then
                     d = v;
-                    continue;
+                    break;
                 end
             else
                 d = v;
-                continue;
+                break;
             end
         end
     end
