@@ -426,6 +426,38 @@ local Modules = {
             end
         end
     },
+    [1458767429] = {
+        -- Anime Battle Arena
+        CustomPlayerTag = function(Player)
+            local Moves = {}
+            local CDs = {}
+
+            local Name = '\n'
+
+            if Player:FindFirstChild 'Backpack' then
+                for i, v in pairs(Player.Backpack:GetChildren()) do
+                    if v:IsA 'BackpackItem' then
+                        table.insert(Moves, v)
+                    end
+                end
+            end
+
+            if #Moves > 0 then
+                for i, v in pairs(Moves) do
+                    if v:FindFirstChild 'CD' then
+                        local CD = v.CD
+                        table.insert(CDs, string.format('[%s | %s/20]', v.Name, CD.Value))
+                    end
+                end
+            end
+
+            if #CDs > 0 then
+                Name = Name .. table.concat(CDs, ' ')
+            end
+
+            return Name
+        end
+    },
     [7056922815] = {
         -- Reaper 2 [Katakura Town]
         CustomESP = function()
