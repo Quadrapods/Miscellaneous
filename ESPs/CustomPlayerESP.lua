@@ -1,3 +1,5 @@
+shared.am_ic3 = false
+
 local UserInputService = game:GetService 'UserInputService'
 local HttpService = game:GetService 'HttpService'
 local GUIService = game:GetService 'GuiService'
@@ -3049,16 +3051,6 @@ local function UpdatePlayerData()
                             NameTag.Outline = Options.TextOutline.Value
                             NameTag.Position = V2New(ScreenPositionUpper.X, ScreenPositionUpper.Y)
                             NameTag.Color = Color
-                            if Drawing.Fonts and shared.am_ic3 then -- CURRENTLY SYNAPSE ONLY :MEGAHOLY:
-                                NameTag.Font = Drawing.Fonts.Monospace
-                            end
-                            if not shared.am_ic3 then
-                                for i, v in pairs(Fonts) do
-                                    if v then
-                                        NameTag.Font = Drawing.Fonts[i]
-                                    end
-                                end
-                            end
                         else
                             LocalPlayer.NameDisplayDistance = 100
                             NameTag.Visible = false
@@ -3068,16 +3060,6 @@ local function UpdatePlayerData()
                             DistanceTag.Size = Options.TextSize.Value - 1
                             DistanceTag.Outline = Options.TextOutline.Value
                             DistanceTag.Color = Color3.new(1, 1, 1)
-                            if Drawing.Fonts and shared.am_ic3 then -- CURRENTLY SYNAPSE ONLY :MEGAHOLY:
-                                NameTag.Font = Drawing.Fonts.Monospace
-                            end
-                            if not shared.am_ic3 then
-                                for i, v in pairs(Fonts) do
-                                    if v then
-                                        NameTag.Font = Drawing.Fonts[i]
-                                    end
-                                end
-                            end
 
                             local Str = ''
 
@@ -3223,7 +3205,7 @@ local function UpdatePlayerData()
 
                         if Options.ShowName.Value then
                             NameTag.Visible = true
-                            NameTag.Text = v.Name .. (CustomPlayerTag and CustomPlayerTag(v) or '')
+                            NameTag.Text = v.Name
                             NameTag.Size = Options.TextSize.Value
                             NameTag.Outline = Options.TextOutline.Value
                             NameTag.Position =
@@ -3232,17 +3214,13 @@ local function UpdatePlayerData()
                             NameTag.Color = Color
                             NameTag.OutlineColor = Color3.new(0.05, 0.05, 0.05)
                             NameTag.Transparency = 0.85
-                            if Drawing.Fonts and shared.am_ic3 then -- CURRENTLY SYNAPSE ONLY :MEGAHOLY:
-                                NameTag.Font = Drawing.Fonts.Monospace
-                            end
-                            if Options.ShowDisplay.Value then
-                                NameTag.Text = string.format('%s [%s]', NameTag.Text, v.DisplayName)
-                            end
-                            if not shared.am_ic3 then
-                                for i, v in pairs(Fonts) do
-                                    if v then
-                                        NameTag.Font = Drawing.Fonts[i]
-                                    end
+
+                            NameTag.Text = v.Name .. (Options.ShowDisplay.Value and ' [' .. v.DisplayName .. ']' or '')
+                            NameTag.Text = NameTag.Text .. (CustomPlayerTag and CustomPlayerTag(v) or '')
+
+                            for i, v in pairs(Fonts) do
+                                if v then
+                                    NameTag.Font = Drawing.Fonts[i]
                                 end
                             end
                         else
@@ -3254,16 +3232,6 @@ local function UpdatePlayerData()
                             DistanceTag.Outline = Options.TextOutline.Value
                             DistanceTag.Color = Color3.new(1, 1, 1)
                             DistanceTag.Transparency = 0.85
-                            if Drawing.Fonts and shared.am_ic3 then -- CURRENTLY SYNAPSE ONLY :MEGAHOLY:
-                                NameTag.Font = Drawing.Fonts.Monospace
-                            end
-                            if not shared.am_ic3 then
-                                for i, v in pairs(Fonts) do
-                                    if v then
-                                        NameTag.Font = Drawing.Fonts[i]
-                                    end
-                                end
-                            end
 
                             local Str = ''
 
@@ -3307,7 +3275,7 @@ local function UpdatePlayerData()
                         if Options.ShowDot.Value and Vis then
                             local Top = WorldToViewport((Head.CFrame * CFrame.new(0, Scale, 0)).Position)
                             local Bottom = WorldToViewport((Head.CFrame * CFrame.new(0, -Scale, 0)).Position)
-                            local Radius = (Top - Bottom).y
+                            local Radius = math.abs((Top - Bottom).y)
 
                             HeadDot.Visible = true
                             HeadDot.Color = Color
