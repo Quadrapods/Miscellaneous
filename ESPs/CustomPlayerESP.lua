@@ -343,34 +343,46 @@ local Modules = {
                             v,
                             Main,
                             string.format('Money Printer\nOwned by %s\n[%s]', O, M),
-                            Color3.fromRGB(13, 255, 227)
+                            Color3.fromRGB(255, 185, 100)
                         )
                     end
                 end
             end
         end
     },
-    -- [4581966615] = {
-    -- 	CustomESP = function()
-    -- 		if workspace:FindFirstChild'Entities' then
-    -- 			for i, v in pairs(workspace.Entities:GetChildren()) do
-    -- 				if not v.Name:match'Printer' then continue end
-
-    -- 				local Properties = v:FindFirstChild'Properties' if not Properties then continue end
-    -- 				local Main	= v:FindFirstChild'hitbox';
-    -- 				local Owner	= Properties:FindFirstChild'Owner';
-    -- 				local Money	= Properties:FindFirstChild'CurrentPrinted'
-
-    -- 				if Main and Owner and Money then
-    -- 					local O = Owner.Value and tostring(Owner.Value) or 'no one';
-    -- 					local M = tostring(Money.Value);
-
-    -- 					pcall(RenderList.AddOrUpdateInstance, RenderList, v, Main, string.format('Money Printer\nOwned by %s\n[%s]', O, M), Color3.fromRGB(13, 255, 227));
-    -- 				end
-    -- 			end
-    -- 		end
-    -- 	end;
-    -- };
+    [4581966615] = {
+        CustomESP = function()
+            if workspace:FindFirstChild 'Entities' then
+                for i, v in pairs(workspace.Entities:GetChildren()) do
+                    if not v.Name:match 'Printer' then
+                        continue
+                    end
+        
+                    local Properties = v:FindFirstChild 'Properties'
+                    if not Properties then
+                        continue
+                    end
+                    local Main = v:FindFirstChild 'hitbox'
+                    local Owner = Properties:FindFirstChild 'Owner'
+                    local Money = Properties:FindFirstChild 'CurrentPrinted'
+        
+                    if Main and Owner and Money then
+                        local O = Owner.Value and tostring(Owner.Value) or 'no one'
+                        local M = tostring(Money.Value)
+        
+                        pcall(
+                            RenderList.AddOrUpdateInstance,
+                            RenderList,
+                            v,
+                            Main,
+                            string.format('Money Printer\nOwned by %s\n[%s]', O, M),
+                            Color3.fromRGB(255, 185, 100)
+                        )
+                    end
+                end
+            end
+        end
+    },
     [4801598506] = {
         CustomESP = function()
             if workspace:FindFirstChild 'Mobs' and workspace.Mobs:FindFirstChild 'Forest1' then
@@ -385,7 +397,7 @@ local Modules = {
                             v,
                             Main,
                             string.format('[%s] [%s/%s]', v.Name, Hum.Health, Hum.MaxHealth),
-                            Color3.fromRGB(13, 255, 227)
+                            Color3.fromRGB(255, 185, 100)
                         )
                     end
                 end
@@ -406,12 +418,132 @@ local Modules = {
                                 v,
                                 Main,
                                 'Wood Planks',
-                                Color3.fromRGB(13, 255, 227)
+                                Color3.fromRGB(255, 185, 100)
                             )
                         end
                     end
                 end
             end
+        end
+    },
+    [7056922815] = {
+        -- Reaper 2 [Katakura Town]
+        CustomESP = function()
+            local Living = workspace:FindFirstChild 'Living'
+            local Player = {}
+
+            for i, v in pairs(Players:GetPlayers()) do
+                if v.Character then
+                    table.insert(Player, v.Character)
+                end
+            end
+
+            for i, v in pairs(Living:GetChildren()) do
+                if not table.find(Player, v) then
+                    local Main = v:FindFirstChild 'HumanoidRootPart'
+                    local Hum = v:FindFirstChild 'Humanoid'
+
+                    if Main and Hum then
+                        pcall(
+                            RenderList.AddOrUpdateInstance,
+                            RenderList,
+                            v,
+                            Main,
+                            string.format('[%s] [%s/%s]', v.Name, math.floor(Hum.Health), Hum.MaxHealth),
+                            Color3.fromRGB(255, 185, 100)
+                        )
+                    end
+                end
+            end
+        end,
+        CustomPlayerTag = function(Player)
+            local Name = '\n['
+            local Specs = {}
+
+            if Player:FindFirstChild 'Status' then
+                local Reiatsu = Player.Status:FindFirstChild 'Reiatsu'
+                local MaxReiatsu = Player.Status:FindFirstChild 'MaxReiatsu'
+
+                Name = Name .. Reiatsu.Value .. '/' .. MaxReiatsu.Value .. ']'
+            end
+
+            if Player:FindFirstChild 'Backpack' then
+                if Player.Backpack:FindFirstChild 'Byakurai' or Player.Backpack:FindFirstChild 'Shakahao' then
+                    table.insert(Specs, 'Soul Reaper')
+                end
+                if Player.Backpack:FindFirstChild 'Menos Cero' then
+                    table.insert(Specs, 'Hollow')
+                end
+                if Player.Backpack:FindFirstChild 'Bala' then
+                    table.insert(Specs, 'Arrancar')
+                end
+            end
+
+            if #Specs > 0 then
+                Name = Name .. ' [' .. table.concat(Specs, '-') .. ']'
+            end
+
+            return Name
+        end
+    },
+    [8934886191] = {
+        -- Reaper 2 [Soul Society]
+        CustomESP = function()
+            local Living = workspace:FindFirstChild 'Living'
+            local Player = {}
+
+            for i, v in pairs(Players:GetPlayers()) do
+                if v.Character then
+                    table.insert(Player, v.Character)
+                end
+            end
+
+            for i, v in pairs(Living:GetChildren()) do
+                if not table.find(Player, v) then
+                    local Main = v:FindFirstChild 'HumanoidRootPart'
+                    local Hum = v:FindFirstChild 'Humanoid'
+
+                    if Main and Hum then
+                        pcall(
+                            RenderList.AddOrUpdateInstance,
+                            RenderList,
+                            v,
+                            Main,
+                            string.format('[%s] [%s/%s]', v.Name, math.floor(Hum.Health), Hum.MaxHealth),
+                            Color3.fromRGB(255, 185, 100)
+                        )
+                    end
+                end
+            end
+        end,
+        CustomPlayerTag = function(Player)
+            local Name = '\n['
+            local Specs = {}
+
+            if Player:FindFirstChild 'Status' then
+                local Reiatsu = Player.Status:FindFirstChild 'Reiatsu'
+                local MaxReiatsu = Player.Status:FindFirstChild 'MaxReiatsu'
+
+                Name = Name .. Reiatsu.Value .. '/' .. MaxReiatsu.Value .. ']'
+            end
+
+            if Player:FindFirstChild 'Backpack' then
+                if Player.Backpack:FindFirstChild 'Byakurai' or Player.Backpack:FindFirstChild 'Shakahao' then
+                    table.insert(Specs, 'Soul Reaper')
+                end
+                if Player.Backpack:FindFirstChild 'Menos Cero' then
+                    table.insert(Specs, 'Hollow')
+                end
+                if Player.Backpack:FindFirstChild 'Bala' then
+                    table.insert(Specs, 'Arrancar')
+                end
+            end
+
+            if #Specs > 0 then
+                Name = Name .. ' [' .. table.concat(Specs, '-') .. ']'
+            end
+
+            return Name
         end
     },
     [5208655184] = {
