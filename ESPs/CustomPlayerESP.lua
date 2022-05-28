@@ -31,6 +31,7 @@ local DragOffset = V2New()
 local DraggingWhat = nil
 local OldData = {}
 local IgnoreList = {}
+local Fonts = {UI = false, System = false, Plex = false, Monospace = false}
 local EnemyColor = Color3.new(1, 0, 0)
 local TeamColor = Color3.new(0, 1, 0)
 local MenuLoaded = false
@@ -1058,7 +1059,7 @@ local Options =
                                     Binding = true
                                     local Val = 0
                                     while Binding do
-                                        wait()
+                                        task.wait()
                                         Val = (Val + 1) % 17
                                         BT.Text = Val <= 8 and '|' or ''
                                     end
@@ -1134,6 +1135,7 @@ Options('Enabled', 'ESP Enabled', true)
 Options('ShowTeam', 'Show Team', true)
 Options('ShowTeamColor', 'Show Team Color', false)
 Options('ShowName', 'Show Names', true)
+Options('ShowDisplay', 'Show Displays', false)
 Options('ShowDistance', 'Show Distance', true)
 Options('ShowHealth', 'Show Health', true)
 Options('ShowBoxes', 'Show Boxes', true)
@@ -1144,7 +1146,7 @@ Options('Crosshair', 'Crosshair', false)
 Options('TextOutline', 'Text Outline', true)
 -- Options('Rainbow', 'Rainbow Mode', false);
 Options('TextSize', 'Text Size', syn and 18 or 14, 10, 24) -- cuz synapse fonts look weird???
-Options('MaxDistance', 'Max Distance', 2500, 100, 25000)
+Options('MaxDistance', 'Max Distance', 10000, 100, 100000)
 Options('RefreshRate', 'Refresh Rate (ms)', 5, 1, 200)
 Options('YOffset', 'Y Offset', 0, -200, 200)
 Options('MenuKey', 'Menu Key', Enum.KeyCode.F4, 1)
@@ -1239,6 +1241,59 @@ Options(
     2
 )
 Options(
+    'ChangeFonts',
+    'Change Fonts',
+    function()
+        SubMenu:Show(
+            GetMouseLocation(),
+            'Unnamed Fonts',
+            {
+                {
+                    Type = 'Button',
+                    Text = 'UI',
+                    Function = function()
+                        for i, v in pairs(Fonts) do
+                            Fonts[i] = false
+                        end
+                        Fonts.UI = true
+                    end
+                },
+                {
+                    Type = 'Button',
+                    Text = 'System',
+                    Function = function()
+                        for i, v in pairs(Fonts) do
+                            Fonts[i] = false
+                        end
+                        Fonts.System = true
+                    end
+                },
+                {
+                    Type = 'Button',
+                    Text = 'Plex',
+                    Function = function()
+                        for i, v in pairs(Fonts) do
+                            Fonts[i] = false
+                        end
+                        Fonts.Plex = true
+                    end
+                },
+                {
+                    Type = 'Button',
+                    Text = 'Monospace',
+                    Function = function()
+                        for i, v in pairs(Fonts) do
+                            Fonts[i] = false
+                        end
+                        Fonts.Monospace = true
+                    end
+                }
+            }
+        )
+    end,
+    3
+)
+Options(
     'ResetSettings',
     'Reset Settings',
     function()
@@ -1252,9 +1307,9 @@ Options(
             end
         end
     end,
-    5
+    6
 )
-Options('LoadSettings', 'Load Settings', Load, 4)
+Options('LoadSettings', 'Load Settings', Load, 5)
 Options(
     'SaveSettings',
     'Save Settings',
@@ -1281,7 +1336,7 @@ Options(
 
         writefile(OptionsFile, HttpService:JSONEncode(COptions))
     end,
-    3
+    4
 )
 
 Load(1)
@@ -1591,7 +1646,7 @@ local function SetImage(Drawing, Url)
 
     if not IsSynapse then
         repeat
-            wait()
+            task.wait()
         until Drawing.Loaded
     end
 end
@@ -1644,10 +1699,10 @@ local function CreateDrawingsTable()
                                  then
                                     CanSet = false
 
-                                    spawn(
+                                    task.spawn(
                                         function()
                                             repeat
-                                                wait()
+                                                task.wait()
                                             until Object.Loaded
                                             if not self.DefaultSize then
                                                 rawset(self, 'DefaultSize', Object.Size)
@@ -1710,7 +1765,7 @@ end
 
 local Images = {}
 
-spawn(
+task.spawn(
     function()
         Images.Ring = 'https://i.imgur.com/q4qx26f.png'
         Images.Overlay = 'https://i.imgur.com/gOCxbsR.png'
@@ -1941,7 +1996,7 @@ function SubMenu:Show(Position, Title, Options)
 
     self.Bounds = {BasePosition.X, BasePosition.Y, End.X, End.Y}
 
-    delay(
+    task.delay(
         0.025,
         function()
             if not self.Open then
@@ -2111,14 +2166,14 @@ function SubMenu:Hide()
         end
     end
 
-    spawn(
+    task.spawn(
         function()
             -- stupid bug happens if i dont use this
             for i = 1, 10 do
                 if shared.CurrentColorPicker then -- dont know why 'CurrentColorPicker' isnt a variable in this
                     shared.CurrentColorPicker:Dispose()
                 end
-                wait(0.1)
+                task.wait(0.1)
             end
         end
     )
@@ -2131,7 +2186,7 @@ function CreateMenu(NewPosition) -- Create Menu
     UIButtons = {}
     Sliders = {}
 
-    local BaseSize = V2New(300, 625)
+    local BaseSize = V2New(300, 675)
     local BasePosition =
         NewPosition or V2New(Camera.ViewportSize.X / 8 - (BaseSize.X / 2), Camera.ViewportSize.Y / 2 - (BaseSize.Y / 2))
 
@@ -2162,7 +2217,7 @@ function CreateMenu(NewPosition) -- Create Menu
         }
     )
 
-    delay(
+    task.delay(
         .025,
         function()
             -- since zindex doesnt exist
@@ -2512,7 +2567,7 @@ function CreateMenu(NewPosition) -- Create Menu
         end
     )
 
-    delay(
+    task.delay(
         .1,
         function()
             MenuLoaded = true
@@ -2553,7 +2608,7 @@ function CreateMenu(NewPosition) -- Create Menu
 end
 
 CreateMenu()
-delay(
+task.delay(
     0.1,
     function()
         SubMenu:Show(V2New()) -- Create the submenu
@@ -2997,6 +3052,13 @@ local function UpdatePlayerData()
                             if Drawing.Fonts and shared.am_ic3 then -- CURRENTLY SYNAPSE ONLY :MEGAHOLY:
                                 NameTag.Font = Drawing.Fonts.Monospace
                             end
+                            if not shared.am_ic3 then
+                                for i, v in pairs(Fonts) do
+                                    if v then
+                                        NameTag.Font = Drawing.Fonts[i]
+                                    end
+                                end
+                            end
                         else
                             LocalPlayer.NameDisplayDistance = 100
                             NameTag.Visible = false
@@ -3008,6 +3070,13 @@ local function UpdatePlayerData()
                             DistanceTag.Color = Color3.new(1, 1, 1)
                             if Drawing.Fonts and shared.am_ic3 then -- CURRENTLY SYNAPSE ONLY :MEGAHOLY:
                                 NameTag.Font = Drawing.Fonts.Monospace
+                            end
+                            if not shared.am_ic3 then
+                                for i, v in pairs(Fonts) do
+                                    if v then
+                                        NameTag.Font = Drawing.Fonts[i]
+                                    end
+                                end
                             end
 
                             local Str = ''
@@ -3166,6 +3235,16 @@ local function UpdatePlayerData()
                             if Drawing.Fonts and shared.am_ic3 then -- CURRENTLY SYNAPSE ONLY :MEGAHOLY:
                                 NameTag.Font = Drawing.Fonts.Monospace
                             end
+                            if Options.ShowDisplay.Value then
+                                NameTag.Text = string.format('%s [%s]', NameTag.Text, v.DisplayName)
+                            end
+                            if not shared.am_ic3 then
+                                for i, v in pairs(Fonts) do
+                                    if v then
+                                        NameTag.Font = Drawing.Fonts[i]
+                                    end
+                                end
+                            end
                         else
                             NameTag.Visible = false
                         end
@@ -3177,6 +3256,13 @@ local function UpdatePlayerData()
                             DistanceTag.Transparency = 0.85
                             if Drawing.Fonts and shared.am_ic3 then -- CURRENTLY SYNAPSE ONLY :MEGAHOLY:
                                 NameTag.Font = Drawing.Fonts.Monospace
+                            end
+                            if not shared.am_ic3 then
+                                for i, v in pairs(Fonts) do
+                                    if v then
+                                        NameTag.Font = Drawing.Fonts[i]
+                                    end
+                                end
                             end
 
                             local Str = ''
