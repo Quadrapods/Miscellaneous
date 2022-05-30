@@ -1,5 +1,3 @@
-shared.am_ic3 = false
-
 local UserInputService = game:GetService 'UserInputService'
 local HttpService = game:GetService 'HttpService'
 local GUIService = game:GetService 'GuiService'
@@ -1142,12 +1140,12 @@ Options('ShowDistance', 'Show Distance', true)
 Options('ShowHealth', 'Show Health', true)
 Options('ShowBoxes', 'Show Boxes', true)
 Options('ShowTracers', 'Show Tracers', true)
+Options('Show2DBox', 'Show Dynamic Boxes', false)
 Options('ShowDot', 'Show Head Dot', false)
 Options('VisCheck', 'Visibility Check', false)
 Options('Crosshair', 'Crosshair', false)
 Options('TextOutline', 'Text Outline', true)
--- Options('Rainbow', 'Rainbow Mode', false);
-Options('TextSize', 'Text Size', syn and 18 or 14, 10, 24) -- cuz synapse fonts look weird???
+Options('TextSize', 'Text Size', syn and 18 or 14, 10, 24)
 Options('MaxDistance', 'Max Distance', 10000, 100, 100000)
 Options('RefreshRate', 'Refresh Rate (ms)', 5, 1, 200)
 Options('YOffset', 'Y Offset', 0, -200, 200)
@@ -1373,10 +1371,9 @@ function LineBox:Create(Properties)
         Properties
     )
 
-    if shared.am_ic3 then -- sory just my preference, dynamic boxes will be optional in unnamed esp v2
+    if QUAD_SUPPORTED_EXPLOIT then
         Box['OutlineSquare'] = NewDrawing 'Square'(Properties)
         Box['Square'] = NewDrawing 'Square'(Properties)
-    elseif QUAD_SUPPORTED_EXPLOIT then
         Box['Quad'] = NewDrawing 'Quad'(Properties)
     else
         Box['TopLeft'] = NewDrawing 'Line'(Properties)
@@ -1390,7 +1387,7 @@ function LineBox:Create(Properties)
             return
         end
 
-        if shared.am_ic3 and typeof(Parts) == 'table' then
+        if Options.Show2DBox.Value and typeof(Parts) == 'table' then
             local AllCorners = {}
 
             for i, v in pairs(Parts) do
@@ -1533,9 +1530,13 @@ function LineBox:Create(Properties)
         end
     end
     function Box:SetVisible(bool)
-        if shared.am_ic3 then
-            Box['Square'].Visible = bool
-            Box['OutlineSquare'].Visible = bool
+        if Options.Show2DBox.Value then
+            pcall(Set, Box['Square'], 'Visible', bool)
+            pcall(Set, Box['OutlineSquare'], 'Visible', bool)
+
+            if Box['Quad'] then
+                pcall(Set, Box['Quad'], 'Visible', bool)
+            end
         else
             pcall(Set, Box['Quad'], 'Visible', bool)
         end
@@ -1546,9 +1547,13 @@ function LineBox:Create(Properties)
     end
     function Box:Remove()
         self:SetVisible(false)
-        if shared.am_ic3 then
+        if Options.Show2DBox.Value then
             Box['Square']:Remove()
             Box['OutlineSquare']:Remove()
+
+            if Box['Quad'] then
+                Box['Quad']:Remove()
+            end
         else
             Box['Quad']:Remove()
         end
@@ -2188,7 +2193,7 @@ function CreateMenu(NewPosition) -- Create Menu
     UIButtons = {}
     Sliders = {}
 
-    local BaseSize = V2New(300, 675)
+    local BaseSize = V2New(300, 700)
     local BasePosition =
         NewPosition or V2New(Camera.ViewportSize.X / 8 - (BaseSize.X / 2), Camera.ViewportSize.Y / 2 - (BaseSize.Y / 2))
 
@@ -3297,7 +3302,7 @@ local function UpdatePlayerData()
                                 V3New(2, 3, 1) * (Scale * 2),
                                 Color,
                                 nil,
-                                shared.am_ic3 and Body
+                                Options.Show2DBox.Value and Body
                             )
                         else
                             Box:SetVisible(false)
@@ -3326,6 +3331,15 @@ local function UpdatePlayerData()
                 OutlineTracer.Visible = false
 
                 Box:SetVisible(false)
+            end
+
+            if QUAD_SUPPORTED_EXPLOIT then
+                if Options.Show2DBox.Value then
+                    pcall(Set, Box['Quad'], 'Visible', false)
+                else
+                    pcall(Set, Box['OutlineSquare'], 'Visible', false)
+                    pcall(Set, Box['Square'], 'Visible', false)
+                end
             end
 
             shared.InstanceData[v.Name] = Data
