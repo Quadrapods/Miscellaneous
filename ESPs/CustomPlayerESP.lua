@@ -1,7 +1,6 @@
 local UserInputService = game:GetService 'UserInputService'
-local HttpService = game:GetService 'HttpService'
-local GUIService = game:GetService 'GuiService'
 local TweenService = game:GetService 'TweenService'
+local HttpService = game:GetService 'HttpService'
 local RunService = game:GetService 'RunService'
 local Players = game:GetService 'Players'
 local LocalPlayer = Players.LocalPlayer
@@ -10,9 +9,6 @@ local Mouse = LocalPlayer:GetMouse()
 local V2New = Vector2.new
 local V3New = Vector3.new
 local WTVP = Camera.WorldToViewportPoint
-local WorldToViewport = function(...)
-    return WTVP(Camera, ...)
-end
 local Menu = {}
 local MouseHeld = false
 local LastRefresh = 0
@@ -35,7 +31,6 @@ local Fonts = {UI = false, System = false, Plex = false, Monospace = false}
 local EnemyColor = Color3.new(1, 0, 0)
 local TeamColor = Color3.new(0, 1, 0)
 local MenuLoaded = false
-local ErrorLogging = false
 local TracerPosition = V2New(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y - 135)
 local DragTracerPosition = false
 local SubMenu = {}
@@ -120,6 +115,10 @@ local function IsStringEmpty(String)
     end
 
     return false
+end
+
+local function WorldToViewport(Number)
+    return WTVP(Camera, Number)
 end
 
 local function Set(t, i, v)
@@ -798,7 +797,6 @@ local Modules = {
             if typeof(FirstName) == 'string' and #FirstName > 0 then
                 local Specs = {}
                 local Place = {}
-                local Extra = {}
                 Name = Name .. '\n['
 
                 if not IsStringEmpty(FirstName) then
@@ -955,8 +953,8 @@ end
 function MouseHoveringOver(Values)
     local X1, Y1, X2, Y2 = Values[1], Values[2], Values[3], Values[4]
     local MLocation = GetMouseLocation()
-    return (MLocation.x >= X1 and MLocation.x <= (X1 + (X2 - X1))) and
-        (MLocation.y >= Y1 and MLocation.y <= (Y1 + (Y2 - Y1)))
+    return (MLocation.X >= X1 and MLocation.X <= (X1 + (X2 - X1))) and
+        (MLocation.Y >= Y1 and MLocation.Y <= (Y1 + (Y2 - Y1)))
 end
 
 function GetTableData(t) -- basically table.foreach i dont even know why i made this
@@ -1140,13 +1138,14 @@ Options('ShowDistance', 'Show Distance', true)
 Options('ShowHealth', 'Show Health', true)
 Options('ShowBoxes', 'Show Boxes', true)
 Options('ShowTracers', 'Show Tracers', true)
+Options('ShowArrows', 'Show FOV Arrows', false)
 Options('Show2DBox', 'Show Dynamic Boxes', false)
 Options('ShowDot', 'Show Head Dot', false)
 Options('VisCheck', 'Visibility Check', false)
 Options('Crosshair', 'Crosshair', false)
 Options('TextOutline', 'Text Outline', true)
-Options('TextSize', 'Text Size', syn and 18 or 14, 10, 24)
 Options('MaxDistance', 'Max Distance', 10000, 100, 100000)
+Options('TextSize', 'Text Size', syn and 18 or 14, 10, 24)
 Options('RefreshRate', 'Refresh Rate (ms)', 5, 1, 200)
 Options('YOffset', 'Y Offset', 0, -200, 200)
 Options('MenuKey', 'Menu Key', Enum.KeyCode.F4, 1)
@@ -1421,7 +1420,7 @@ function LineBox:Create(Properties)
             for i, v in pairs(AllCorners) do
                 local Position, V = WorldToViewport(v)
 
-                if VS and not V then
+                if Vs and not V then
                     Vs = false
                     break
                 end
@@ -1745,7 +1744,7 @@ local function CreateDrawingsTable()
                 Object.Color = Color3.new(1, 1, 1)
                 Object.Center = true
                 Object.Outline = true
-                OutlineOpacity = 0.5
+                -- OutlineOpacity = 0.5
             elseif Type == 'Square' or Type == 'Rectangle' then
                 Object.Thickness = 2
                 Object.Filled = false
@@ -1871,7 +1870,7 @@ function ColorPicker.new(Position, Size, Color)
                 local Bounds = Main.Size / 2
                 local Center = Main.Position + Bounds
                 local Relative = MousePosition - Center
-                local Direction = Relative.unit
+                local Direction = Relative.Unit
                 local Position = Center + Direction * Main.Size.X / 2.15
                 local H = (math.atan2(Position.Y - Center.Y, Position.X - Center.X)) * 60
                 if H < 0 then
@@ -2193,7 +2192,7 @@ function CreateMenu(NewPosition) -- Create Menu
     UIButtons = {}
     Sliders = {}
 
-    local BaseSize = V2New(300, 700)
+    local BaseSize = V2New(300, 725)
     local BasePosition =
         NewPosition or V2New(Camera.ViewportSize.X / 8 - (BaseSize.X / 2), Camera.ViewportSize.Y / 2 - (BaseSize.Y / 2))
 
@@ -2377,9 +2376,7 @@ function CreateMenu(NewPosition) -- Create Menu
                     Format('%s_SliderLine', v.Name),
                     'Square',
                     {
-                        Transparency = 1,
                         Color = Colors.Secondary.Light,
-                        -- Thickness		= 3;
                         Filled = true,
                         Visible = true,
                         Position = BasePosition + V2New(15, -5),
@@ -2787,9 +2784,9 @@ shared.UESP_InputEndedCon =
                                 continue
                             end
 
-                            local Direction = -(Camera.CFrame.Position - Mouse.Hit.Position).unit
+                            local Direction = -(Camera.CFrame.Position - Mouse.Hit.Position).Unit
                             local Relative = Character.Head.Position - Camera.CFrame.Position
-                            local Unit = Relative.unit
+                            local Unit = Relative.Unit
 
                             local DP = Direction:Dot(Unit)
 
@@ -2885,7 +2882,7 @@ local function CheckRay(Instance, Distance, Position, Unit)
 
     if Hit and not Hit:IsDescendantOf(Model) then
         Pass = false
-        if Hit.Transparency >= .3 or not Hit.CanCollide and Hit.ClassName ~= Terrain then -- Detect invisible walls
+        if Hit.Transparency >= .3 or not Hit.CanCollide and Hit.ClassName ~= 'Terrain' then -- Detect invisible walls
             IgnoreList[#IgnoreList + 1] = Hit
         end
     end
@@ -2904,7 +2901,7 @@ local CustomTeam = CustomTeams[game.PlaceId]
 
 if CustomTeam ~= nil then
     if CustomTeam.Initialize then
-        ypcall(CustomTeam.Initialize)
+        pcall(CustomTeam.Initialize)
     end
 
     CheckTeam = CustomTeam.CheckTeam
@@ -2928,7 +2925,7 @@ local function CheckPlayer(Player, Character)
         if Pass and Character and Head then
             Distance = (Camera.CFrame.Position - Head.Position).Magnitude
             if Options.VisCheck.Value then
-                Pass = CheckRay(Player, Distance, Camera.CFrame.Position, (Head.Position - Camera.CFrame.Position).unit)
+                Pass = CheckRay(Player, Distance, Camera.CFrame.Position, (Head.Position - Camera.CFrame.Position).Unit)
             end
             if Distance > Options.MaxDistance.Value then
                 Pass = false
@@ -2953,7 +2950,7 @@ local function CheckDistance(Instance)
         Distance = (Camera.CFrame.Position - Instance.Position).Magnitude
         if Options.VisCheck.Value then
             Pass =
-                CheckRay(Instance, Distance, Camera.CFrame.Position, (Instance.Position - Camera.CFrame.Position).unit)
+                CheckRay(Instance, Distance, Camera.CFrame.Position, (Instance.Position - Camera.CFrame.Position).Unit)
         end
         if Distance > Options.MaxDistance.Value then
             Pass = false
@@ -2963,6 +2960,41 @@ local function CheckDistance(Instance)
     end
 
     return Pass, Distance
+end
+
+local function CheckRelative(Position, Instance)
+    if not Options.Enabled.Value then
+        return false
+    end
+
+    local Vector = V2New()
+
+    if Instance ~= nil and Instance.PrimaryPart ~= nil then
+        local Relative
+        local Pos = Instance.PrimaryPart.Position
+        local CPos = Camera.CFrame.Position
+
+        Relative = CFrame.new(V3New(Pos.X, CPos.Y, Pos.Z), CPos):PointToObjectSpace(Position)
+        Vector = V2New(Relative.X, Relative.Z)
+    end
+
+    return Vector
+end
+
+local function RelativeToCenter(Sub)
+    local Relative
+    Relative = (Camera.ViewportSize / 2) - Sub
+
+    return Relative
+end
+
+local function RotateVector(Vector, Rotation)
+    local Radian = math.rad(Rotation)
+
+    local RotationOne = Vector.X * math.cos(Radian) - Vector.Y * math.sin(Radian)
+    local RotationTwo = Vector.X * math.sin(Radian) + Vector.Y * math.cos(Radian)
+
+    return V2New(RotationOne, RotationTwo)
 end
 
 local function UpdatePlayerData()
@@ -3006,28 +3038,43 @@ local function UpdatePlayerData()
                         Outline = Options.TextOutline.Value,
                         Visible = true
                     }
+                Data.Instances['Arrow'] =
+                    Data.Instances['Arrow'] or
+                    NewDrawing 'Triangle' {
+                        Transparency = 1,
+                        Thickness = 1,
+                        Filled = true
+                    }
 
                 local NameTag = Data.Instances['NameTag']
                 local DistanceTag = Data.Instances['DistanceTag']
                 local Tracer = Data.Instances['Tracer']
                 local OutlineTracer = Data.Instances['OutlineTracer']
+                local Arrow = Data.Instances['Arrow']
 
                 local Pass, Distance = CheckDistance(v.Instance)
+                local Relative = CheckRelative(v.Instance.CFrame.Position, GetCharacter(LocalPlayer)).Unit
 
                 if Pass then
                     local ScreenPosition, Vis = WorldToViewport(v.Instance.Position)
                     local Color = v.Color
-                    local OPos = Camera.CFrame:pointToObjectSpace(v.Instance.Position)
+                    local OPos = Camera.CFrame:PointToObjectSpace(v.Instance.Position)
 
                     if ScreenPosition.Z < 0 then
                         local AT = math.atan2(OPos.Y, OPos.X) + math.pi
                         OPos =
-                            CFrame.Angles(0, 0, AT):vectorToWorldSpace(
-                            (CFrame.Angles(0, math.rad(89.9), 0):vectorToWorldSpace(V3New(0, 0, -1)))
+                            CFrame.Angles(0, 0, AT):VectorToWorldSpace(
+                            (CFrame.Angles(0, math.rad(89.9), 0):VectorToWorldSpace(V3New(0, 0, -1)))
                         )
                     end
 
-                    local Position = WorldToViewport(Camera.CFrame:pointToWorldSpace(OPos))
+                    local Position = WorldToViewport(Camera.CFrame:PointToWorldSpace(OPos))
+
+                    local Base = Relative * 120
+                    local Tip = Relative * 136
+
+                    local BaseL = Base + RotateVector(Relative, 90) * 8
+                    local BaseR = Base + RotateVector(Relative, -90) * 8
 
                     if Options.ShowTracers.Value then
                         Tracer.Transparency = math.clamp(Distance / 200, 0.45, 0.8)
@@ -3043,6 +3090,17 @@ local function UpdatePlayerData()
                     else
                         Tracer.Visible = false
                         OutlineTracer.Visible = false
+                    end
+
+                    if Options.ShowArrows.Value then
+                        Arrow.Transparency = math.clamp(Distance / 200, 0.45, 0.8)
+                        Arrow.Visible = true
+                        Arrow.PointA = RelativeToCenter(BaseL)
+                        Arrow.PointB = RelativeToCenter(BaseR)
+                        Arrow.PointC = RelativeToCenter(Tip)
+                        Arrow.Color = Color
+                    else
+                        Arrow.Visible = false
                     end
 
                     if ScreenPosition.Z > 0 then
@@ -3093,6 +3151,7 @@ local function UpdatePlayerData()
                 Data.Instances['DistanceTag'] = DistanceTag
                 Data.Instances['Tracer'] = Tracer
                 Data.Instances['OutlineTracer'] = OutlineTracer
+                Data.Instances['Arrow'] = Arrow
 
                 shared.InstanceData[v.Instance:GetDebugId()] = Data
             end
@@ -3138,12 +3197,20 @@ local function UpdatePlayerData()
                     OutlineOpacity = 1,
                     Visible = true
                 }
+            Data.Instances['Arrow'] =
+                Data.Instances['Arrow'] or
+                NewDrawing 'Triangle' {
+                    Transparency = 1,
+                    Thickness = 1,
+                    Filled = true
+                }
 
             local NameTag = Data.Instances['NameTag']
             local DistanceTag = Data.Instances['DistanceHealthTag']
             local Tracer = Data.Instances['Tracer']
             local OutlineTracer = Data.Instances['OutlineTracer']
             local HeadDot = Data.Instances['HeadDot']
+            local Arrow = Data.Instances['Arrow']
             local Box = Data.Instances['Box']
 
             local Character = GetCharacter(v)
@@ -3165,17 +3232,24 @@ local function UpdatePlayerData()
                         Rainbow and Color3.fromHSV(tick() * 128 % 255 / 255, 1, 1) or
                         (CheckTeam(v) and TeamColor or EnemyColor)
                     Color = Options.ShowTeamColor.Value and v.TeamColor.Color or Color
-                    local OPos = Camera.CFrame:pointToObjectSpace(Head.Position)
+                    local OPos = Camera.CFrame:PointToObjectSpace(Head.Position)
 
                     if ScreenPosition.Z < 0 then
                         local AT = math.atan2(OPos.Y, OPos.X) + math.pi
                         OPos =
-                            CFrame.Angles(0, 0, AT):vectorToWorldSpace(
-                            (CFrame.Angles(0, math.rad(89.9), 0):vectorToWorldSpace(V3New(0, 0, -1)))
+                            CFrame.Angles(0, 0, AT):VectorToWorldSpace(
+                            (CFrame.Angles(0, math.rad(89.9), 0):VectorToWorldSpace(V3New(0, 0, -1)))
                         )
                     end
 
-                    local Position = WorldToViewport(Camera.CFrame:pointToWorldSpace(OPos))
+                    local Position = WorldToViewport(Camera.CFrame:PointToWorldSpace(OPos))
+                    local Relative = CheckRelative(HumanoidRootPart.CFrame.Position, GetCharacter(LocalPlayer)).Unit
+
+                    local Base = Relative * 120
+                    local Tip = Relative * 136
+
+                    local BaseL = Base + RotateVector(Relative, 90) * 8
+                    local BaseR = Base + RotateVector(Relative, -90) * 8
 
                     if Options.ShowTracers.Value then
                         if
@@ -3198,6 +3272,17 @@ local function UpdatePlayerData()
                     else
                         Tracer.Visible = false
                         OutlineTracer.Visible = false
+                    end
+
+                    if Options.ShowArrows.Value then
+                        Arrow.Transparency = math.clamp(1 - (Distance / 200), 0.25, 0.75)
+                        Arrow.Visible = true
+                        Arrow.PointA = RelativeToCenter(BaseL)
+                        Arrow.PointB = RelativeToCenter(BaseR)
+                        Arrow.PointC = RelativeToCenter(Tip)
+                        Arrow.Color = Color
+                    else
+                        Arrow.Visible = false
                     end
 
                     if ScreenPosition.Z > 0 then
@@ -3280,7 +3365,7 @@ local function UpdatePlayerData()
                         if Options.ShowDot.Value and Vis then
                             local Top = WorldToViewport((Head.CFrame * CFrame.new(0, Scale, 0)).Position)
                             local Bottom = WorldToViewport((Head.CFrame * CFrame.new(0, -Scale, 0)).Position)
-                            local Radius = math.abs((Top - Bottom).y)
+                            local Radius = math.abs((Top - Bottom).Y)
 
                             HeadDot.Visible = true
                             HeadDot.Color = Color
@@ -3320,6 +3405,7 @@ local function UpdatePlayerData()
                     HeadDot.Visible = false
                     Tracer.Visible = false
                     OutlineTracer.Visible = false
+                    Arrow.Visible = false
 
                     Box:SetVisible(false)
                 end
@@ -3329,6 +3415,7 @@ local function UpdatePlayerData()
                 HeadDot.Visible = false
                 Tracer.Visible = false
                 OutlineTracer.Visible = false
+                Arrow.Visible = false
 
                 Box:SetVisible(false)
             end
@@ -3419,18 +3506,18 @@ local function Update()
 
             Menu:UpdateMenuInstance 'Cursor1' {
                 Visible = true,
-                From = V2New(MLocation.x, MLocation.y),
-                To = V2New(MLocation.x + 5, MLocation.y + 6)
+                From = V2New(MLocation.X, MLocation.Y),
+                To = V2New(MLocation.X + 5, MLocation.Y + 6)
             }
             Menu:UpdateMenuInstance 'Cursor2' {
                 Visible = true,
-                From = V2New(MLocation.x, MLocation.y),
-                To = V2New(MLocation.x, MLocation.y + 8)
+                From = V2New(MLocation.X, MLocation.Y),
+                To = V2New(MLocation.X, MLocation.Y + 8)
             }
             Menu:UpdateMenuInstance 'Cursor3' {
                 Visible = true,
-                From = V2New(MLocation.x, MLocation.y + 6),
-                To = V2New(MLocation.x + 5, MLocation.y + 5)
+                From = V2New(MLocation.X, MLocation.Y + 6),
+                To = V2New(MLocation.X + 5, MLocation.Y + 5)
             }
         else
             if Debounce.CursorVis then
