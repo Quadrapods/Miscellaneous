@@ -48,8 +48,6 @@ local Executor = (identifyexecutor or (function()
 local SupportedExploits = {'Synapse X', 'ScriptWare', 'Krnl', 'OxygenU', 'Temple'}
 local QUAD_SUPPORTED_EXPLOIT = table.find(SupportedExploits, Executor) ~= nil
 
--- if not PROTOSMASHER_LOADED then Drawing.UseCompatTransparency = true; end -- For Elysian
-
 shared.MenuDrawingData = shared.MenuDrawingData or {Instances = {}}
 shared.InstanceData = shared.InstanceData or {}
 shared.RSName = shared.RSName or ('UnnamedESP_by_ic3-' .. HttpService:GenerateGUID(false))
@@ -127,11 +125,10 @@ end
 
 local Teams = {}
 local CustomTeams = {
-    -- Games that don't use roblox's team system
     [2563455047] = {
         Initialize = function()
-            Teams.Sheriffs = {} -- prevent big error
-            Teams.Bandits = {} -- prevent big error
+            Teams.Sheriffs = {}
+            Teams.Bandits = {}
             local Func = game:GetService 'ReplicatedStorage':WaitForChild('RogueFunc', 1)
             local Event = game:GetService 'ReplicatedStorage':WaitForChild('RogueEvent', 1)
             local S, B = Func:InvokeServer 'AllTeamData'
@@ -140,7 +137,7 @@ local CustomTeams = {
             Teams.Bandits = B
 
             Event.OnClientEvent:Connect(
-                function(id, PlayerName, Team, Remove) -- stolen straight from decompiled src lul
+                function(id, PlayerName, Team, Remove)
                     if id == 'UpdateTeam' then
                         local TeamTable, NotTeamTable
                         if Team == 'Bandits' then
@@ -426,6 +423,21 @@ local Modules = {
             end
         end
     },
+    [4671157242] = {
+        -- Black Magic 1
+        CustomPlayerTag = function(Player)
+            local Name = ''
+
+            if Player:FindFirstChild 'leaderstats' then
+                local Rank = Player.leaderstats:FindFirstChild 'Rank'
+                local Spree = Player.leaderstats:FindFirstChild 'Spree'
+
+                Name = string.format('\n[%s] [Spree: %s]', Rank.Value, Spree.Value)
+            end
+
+            return Name
+        end
+    },
     [1458767429] = {
         -- Anime Battle Arena
         CustomPlayerTag = function(Player)
@@ -453,6 +465,116 @@ local Modules = {
 
             if #CDs > 0 then
                 Name = Name .. table.concat(CDs, ' ')
+            end
+
+            return Name
+        end
+    },
+    [9187108855] = {
+        -- Soul War [Karakura Town]
+        CustomESP = function()
+            local Living = workspace:FindFirstChild 'Alive'
+            local Player = {}
+
+            for i, v in pairs(Players:GetPlayers()) do
+                if v.Character then
+                    table.insert(Player, v.Character)
+                end
+            end
+
+            for i, v in pairs(Living:GetChildren()) do
+                if not table.find(Player, v) then
+                    local Main = v:FindFirstChild 'HumanoidRootPart'
+                    local Hum = v:FindFirstChild 'Humanoid'
+
+                    local Name = v.Name
+
+                    if not string.find(Name, 'Trainee') then
+                        Name = string.gsub(v.Name, '%d+', '')
+                    end
+
+                    if Main and Hum then
+                        pcall(
+                            RenderList.AddOrUpdateInstance,
+                            RenderList,
+                            v,
+                            Main,
+                            string.format('[%s] [%s/%s]', Name, math.floor(Hum.Health), Hum.MaxHealth),
+                            Color3.fromRGB(255, 185, 100)
+                        )
+                    end
+                end
+            end
+        end,
+        CustomPlayerTag = function(Player)
+            local Name = ''
+            local Character = GetCharacter(Player)
+
+            if Character then
+                local Reiatsu = ''
+
+                if Character:FindFirstChild 'Reiatsu' then
+                    Reiatsu = Character.Reiatsu
+                end
+
+                if not IsStringEmpty(Reiatsu) then
+                    Name = string.format('\n[%s]', Reiatsu.Value)
+                end
+            end
+
+            return Name
+        end
+    },
+    [8860321655] = {
+        -- Soul War [Hueco Mundo]
+        CustomESP = function()
+            local Living = workspace:FindFirstChild 'Alive'
+            local Player = {}
+
+            for i, v in pairs(Players:GetPlayers()) do
+                if v.Character then
+                    table.insert(Player, v.Character)
+                end
+            end
+
+            for i, v in pairs(Living:GetChildren()) do
+                if not table.find(Player, v) then
+                    local Main = v:FindFirstChild 'HumanoidRootPart'
+                    local Hum = v:FindFirstChild 'Humanoid'
+
+                    local Name = v.Name
+
+                    if not string.find(Name, 'Trainee') then
+                        Name = string.gsub(v.Name, '%d+', '')
+                    end
+
+                    if Main and Hum then
+                        pcall(
+                            RenderList.AddOrUpdateInstance,
+                            RenderList,
+                            v,
+                            Main,
+                            string.format('[%s] [%s/%s]', Name, math.floor(Hum.Health), Hum.MaxHealth),
+                            Color3.fromRGB(255, 185, 100)
+                        )
+                    end
+                end
+            end
+        end,
+        CustomPlayerTag = function(Player)
+            local Name = ''
+            local Character = GetCharacter(Player)
+
+            if Character then
+                local Reiatsu = ''
+
+                if Character:FindFirstChild 'Reiatsu' then
+                    Reiatsu = Character.Reiatsu
+                end
+
+                if not IsStringEmpty(Reiatsu) then
+                    Name = string.format('\n[%s]', Reiatsu.Value)
+                end
             end
 
             return Name
@@ -489,30 +611,22 @@ local Modules = {
             end
         end,
         CustomPlayerTag = function(Player)
-            local Name = '\n['
-            local Specs = {}
+            local Name = ''
 
             if Player:FindFirstChild 'Status' then
-                local Reiatsu = Player.Status:FindFirstChild 'Reiatsu'
-                local MaxReiatsu = Player.Status:FindFirstChild 'MaxReiatsu'
+                local Reiatsu = ''
+                local MaxReiatsu = ''
 
-                Name = Name .. Reiatsu.Value .. '/' .. MaxReiatsu.Value .. ']'
-            end
+                if Player.Status:FindFirstChild 'Reiatsu' then
+                    Reiatsu = Player.Status.Reiatsu
+                end
+                if Player.Status:FindFirstChild 'MaxReiatsu' then
+                    MaxReiatsu = Player.Status.MaxReiatsu
+                end
 
-            if Player:FindFirstChild 'Backpack' then
-                if Player.Backpack:FindFirstChild 'Byakurai' or Player.Backpack:FindFirstChild 'Shakahao' then
-                    table.insert(Specs, 'Soul Reaper')
+                if not IsStringEmpty(Reiatsu) and not IsStringEmpty(MaxReiatsu) then
+                    Name = string.format('\n[%s/%s]', Reiatsu.Value, MaxReiatsu.Value)
                 end
-                if Player.Backpack:FindFirstChild 'Menos Cero' then
-                    table.insert(Specs, 'Hollow')
-                end
-                if Player.Backpack:FindFirstChild 'Bala' then
-                    table.insert(Specs, 'Arrancar')
-                end
-            end
-
-            if #Specs > 0 then
-                Name = Name .. ' [' .. table.concat(Specs, '-') .. ']'
             end
 
             return Name
@@ -549,30 +663,22 @@ local Modules = {
             end
         end,
         CustomPlayerTag = function(Player)
-            local Name = '\n['
-            local Specs = {}
+            local Name = ''
 
             if Player:FindFirstChild 'Status' then
-                local Reiatsu = Player.Status:FindFirstChild 'Reiatsu'
-                local MaxReiatsu = Player.Status:FindFirstChild 'MaxReiatsu'
+                local Reiatsu = ''
+                local MaxReiatsu = ''
 
-                Name = Name .. Reiatsu.Value .. '/' .. MaxReiatsu.Value .. ']'
-            end
+                if Player.Status:FindFirstChild 'Reiatsu' then
+                    Reiatsu = Player.Status.Reiatsu
+                end
+                if Player.Status:FindFirstChild 'MaxReiatsu' then
+                    MaxReiatsu = Player.Status.MaxReiatsu
+                end
 
-            if Player:FindFirstChild 'Backpack' then
-                if Player.Backpack:FindFirstChild 'Byakurai' or Player.Backpack:FindFirstChild 'Shakahao' then
-                    table.insert(Specs, 'Soul Reaper')
+                if not IsStringEmpty(Reiatsu) and not IsStringEmpty(MaxReiatsu) then
+                    Name = string.format('\n[%s/%s]', Reiatsu.Value, MaxReiatsu.Value)
                 end
-                if Player.Backpack:FindFirstChild 'Menos Cero' then
-                    table.insert(Specs, 'Hollow')
-                end
-                if Player.Backpack:FindFirstChild 'Bala' then
-                    table.insert(Specs, 'Arrancar')
-                end
-            end
-
-            if #Specs > 0 then
-                Name = Name .. ' [' .. table.concat(Specs, '-') .. ']'
             end
 
             return Name
@@ -840,6 +946,61 @@ local Modules = {
             return Name
         end
     },
+    [9530846958] = {
+        -- Epsilon Lineage 2
+        CustomPlayerTag = function(Player)
+            local Data = Player:FindFirstChild 'Data'
+
+            local Name = ''
+            local FirstName = Player:FindFirstChild 'RaceName'.Value
+            local LastName = Data:FindFirstChild 'HouseName'.Value
+
+            if typeof(FirstName) == 'string' and #FirstName > 0 then
+                local Specs = {}
+                local Place = {}
+                Name = Name .. '\n['
+
+                if not IsStringEmpty(FirstName) then
+                    Name = Name .. FirstName
+                end
+                if not IsStringEmpty(LastName) then
+                    Name = Name .. ' ' .. LastName
+                end
+
+                if not IsStringEmpty(Name) then
+                    Name = Name .. ']'
+                end
+
+                if Data then
+                    if Data and Data:FindFirstChild 'Race' then
+                        table.insert(Specs, Data:FindFirstChild 'Race'.Value)
+                    end
+                    if Data and Data:FindFirstChild 'Class' then
+                        table.insert(Specs, Data:FindFirstChild 'Class'.Value)
+                    end
+                    if Data and Data:FindFirstChild 'IsVamp' then
+                        if Data:FindFirstChild 'IsVamp'.Value then
+                            table.insert(Specs, 'V')
+                        end
+                    end
+                end
+
+                if Player:FindFirstChild 'Location' then
+                    table.insert(Place, Player:FindFirstChild 'Location'.Value)
+                end
+
+                if #Specs > 0 then
+                    Name = Name .. '\n[' .. table.concat(Specs, '-') .. ']'
+                end
+
+                if #Place > 0 then
+                    Name = Name .. ' [' .. table.concat(Place, '-') .. ']'
+                end
+            end
+
+            return Name
+        end
+    },
     [4691401390] = {
         -- Vast Realm
         CustomCharacter = function(Player)
@@ -852,7 +1013,7 @@ local Modules = {
         -- Deepwoken [Etrean]
         CustomPlayerTag = function(Player)
             local Name = ''
-            CharacterName = Player:GetAttribute 'CharacterName' -- could use leaderstats but lazy
+            CharacterName = Player:GetAttribute 'CharacterName'
 
             if not IsStringEmpty(CharacterName) then
                 Name = ('\n[%s]'):format(CharacterName)
@@ -893,7 +1054,7 @@ local Modules = {
         -- Deepwoken [Depths]
         CustomPlayerTag = function(Player)
             local Name = ''
-            CharacterName = Player:GetAttribute 'CharacterName' -- could use leaderstats but lazy
+            CharacterName = Player:GetAttribute 'CharacterName'
 
             if not IsStringEmpty(CharacterName) then
                 Name = ('\n[%s]'):format(CharacterName)
@@ -957,7 +1118,7 @@ function MouseHoveringOver(Values)
         (MLocation.Y >= Y1 and MLocation.Y <= (Y1 + (Y2 - Y1)))
 end
 
-function GetTableData(t) -- basically table.foreach i dont even know why i made this
+function GetTableData(t)
     if typeof(t) ~= 'table' then
         return
     end
@@ -985,7 +1146,6 @@ end
 
 function NewDrawing(InstanceName)
     local Instance = Drawing.new(InstanceName)
-    -- pcall(Set, Instance, 'OutlineOpacity', 0.8)
     return (function(Properties)
         for i, v in pairs(Properties) do
             pcall(Set, Instance, i, v)
@@ -1099,7 +1259,7 @@ local Options =
 function Load()
     local _, Result = pcall(readfile, OptionsFile)
 
-    if _ then -- extremely ugly code yea i know but i dont care p.s. i hate pcall
+    if _ then
         local _, Table = pcall(HttpService.JSONDecode, HttpService, Result)
         if _ and typeof(Table) == 'table' then
             for i, v in pairs(Table) do
@@ -1358,7 +1518,7 @@ local function Combine(...)
 end
 
 function LineBox:Create(Properties)
-    local Box = {Visible = true} -- prevent errors not really though dont worry bout the Visible = true thing
+    local Box = {Visible = true}
 
     local Properties =
         Combine(
@@ -1390,10 +1550,8 @@ function LineBox:Create(Properties)
             local AllCorners = {}
 
             for i, v in pairs(Parts) do
-                -- if not v:IsA'BasePart' then continue end
 
                 local CF, Size = v.CFrame, v.Size
-                -- CF, Size = v.Parent:GetBoundingBox();
 
                 local Corners = {
                     Vector3.new(CF.X + Size.X / 2, CF.Y + Size.Y / 2, CF.Z + Size.Z / 2),
@@ -1409,8 +1567,6 @@ function LineBox:Create(Properties)
                 for i, v in pairs(Corners) do
                     table.insert(AllCorners, v)
                 end
-
-                -- break
             end
 
             local xMin, yMin = Camera.ViewportSize.X, Camera.ViewportSize.Y
@@ -1448,7 +1604,6 @@ function LineBox:Create(Properties)
             Square.Position = V2New(xMin, yMin)
             Square.Color = Color
             Square.Thickness = math.floor(Outline.Thickness * 0.3)
-            -- Square.Position = V2New(xMin, yMin);
             Square.Size = V2New(xSize, ySize)
             Outline.Position = Square.Position
             Outline.Size = Square.Size
@@ -1477,12 +1632,11 @@ function LineBox:Create(Properties)
                 Box['Quad'].Visible = false
             end
         else
-            Visible1 = TLPos.Z > 0 -- (commented | reason: random flashes);
-            Visible2 = TRPos.Z > 0 -- (commented | reason: random flashes);
-            Visible3 = BLPos.Z > 0 -- (commented | reason: random flashes);
-            Visible4 = BRPos.Z > 0 -- (commented | reason: random flashes);
+            Visible1 = TLPos.Z > 0
+            Visible2 = TRPos.Z > 0
+            Visible3 = BLPos.Z > 0
+            Visible4 = BRPos.Z > 0
 
-            -- ## BEGIN UGLY CODE
             if Visible1 then
                 Box['TopLeft'].Visible = true
                 Box['TopLeft'].Color = Color
@@ -1515,7 +1669,6 @@ function LineBox:Create(Properties)
             else
                 Box['BottomRight'].Visible = false
             end
-            -- ## END UGLY CODE
             if Properties and typeof(Properties) == 'table' then
                 GetTableData(Properties)(
                     function(i, v)
@@ -1539,10 +1692,6 @@ function LineBox:Create(Properties)
         else
             pcall(Set, Box['Quad'], 'Visible', bool)
         end
-        -- pcall(Set, Box['TopLeft'],		'Visible', bool);
-        -- pcall(Set, Box['TopRight'],		'Visible', bool);
-        -- pcall(Set, Box['BottomLeft'],	'Visible', bool);
-        -- pcall(Set, Box['BottomRight'],	'Visible', bool);
     end
     function Box:Remove()
         self:SetVisible(false)
@@ -1556,10 +1705,6 @@ function LineBox:Create(Properties)
         else
             Box['Quad']:Remove()
         end
-        -- Box['TopLeft']:Remove();
-        -- Box['TopRight']:Remove();
-        -- Box['BottomLeft']:Remove();
-        -- Box['BottomRight']:Remove();
     end
 
     return Box
@@ -1657,9 +1802,6 @@ local function SetImage(Drawing, Url)
     end
 end
 
--- oh god unnamed esp needs an entire rewrite, someone make a better one pls im too lazy
--- btw the color picker was made seperately so it doesnt fit with the code of unnamed esp
-
 local function CreateDrawingsTable()
     local Drawings = {__Objects = {}}
     local Metatable = {}
@@ -1734,7 +1876,7 @@ local function CreateDrawingsTable()
             )
 
             Object.Visible = true
-            Object.Transparency = 1 -- Transparency is really Opacity with drawing api (1 being visible, 0 being invisible)
+            Object.Transparency = 1
 
             if Type == 'Text' then
                 if Drawing.Fonts then
@@ -1744,7 +1886,6 @@ local function CreateDrawingsTable()
                 Object.Color = Color3.new(1, 1, 1)
                 Object.Center = true
                 Object.Outline = true
-                -- OutlineOpacity = 0.5
             elseif Type == 'Square' or Type == 'Rectangle' then
                 Object.Thickness = 2
                 Object.Filled = false
@@ -1948,7 +2089,7 @@ function ColorPicker.new(Position, Size, Color)
         self.Drawings(false)
         self.UpdatePosition = nil
         self.HandleInput = nil
-        Connections:DisconnectAll() -- scuffed tbh
+        Connections:DisconnectAll()
     end
 
     Connections:Listen(
@@ -2070,12 +2211,11 @@ function SubMenu:Show(Position, Title, Options)
     )
 
     if Options then
-        for Index, Option in pairs(Options) do -- currently only supports color and button(but color is a button so), planning on fully rewriting or something
+        for Index, Option in pairs(Options) do
             local function GetName(Name)
                 return ('Sub-%s.%d'):format(Name, Index)
             end
             local Position = shared.MenuDrawingData.Instances['Sub-Filling'].Position + V2New(20, Index * 25 - 10)
-            -- local BasePosition	= shared.MenuDrawingData.Instances.Filling.Position + V2New(30, v.Index * 25 - 10);
 
             if Option.Type == 'Color' then
                 local ColorPreview =
@@ -2159,7 +2299,7 @@ function SubMenu:Hide()
         if i:sub(1, 3) == 'Sub' then
             v.Visible = false
 
-            if i:sub(4, 4) == ':' then -- ';' = Temporary so remove
+            if i:sub(4, 4) == ':' then
                 v:Remove()
                 shared.MenuDrawingData.Instance[i] = nil
             end
@@ -2174,9 +2314,8 @@ function SubMenu:Hide()
 
     task.spawn(
         function()
-            -- stupid bug happens if i dont use this
             for i = 1, 10 do
-                if shared.CurrentColorPicker then -- dont know why 'CurrentColorPicker' isnt a variable in this
+                if shared.CurrentColorPicker then
                     shared.CurrentColorPicker:Dispose()
                 end
                 task.wait(0.1)
@@ -2187,7 +2326,7 @@ function SubMenu:Hide()
     CurrentColorPicker = nil
 end
 
-function CreateMenu(NewPosition) -- Create Menu
+function CreateMenu(NewPosition)
     MenuLoaded = false
     UIButtons = {}
     Sliders = {}
@@ -2226,7 +2365,6 @@ function CreateMenu(NewPosition) -- Create Menu
     task.delay(
         .025,
         function()
-            -- since zindex doesnt exist
             Menu:AddMenuInstance(
                 'Main',
                 'Square',
@@ -2272,7 +2410,7 @@ function CreateMenu(NewPosition) -- Create Menu
             Text = 'Unnamed ESP',
             Color = Colors.Secondary.Light,
             Visible = true,
-            Transparency = 1, -- proto outline fix
+            Transparency = 1,
             Outline = true,
             OutlineOpacity = 0.5
         }
@@ -2364,7 +2502,7 @@ function CreateMenu(NewPosition) -- Create Menu
         end
     )
     GetTableData(Options)(
-        function(i, v) -- just to make sure certain things are drawn before or after others, too lazy to actually sort table
+        function(i, v)
             if typeof(v.Value) == 'number' then
                 CPos = CPos + 25
 
@@ -2435,7 +2573,6 @@ function CreateMenu(NewPosition) -- Create Menu
                 Dummy:GetPropertyChangedSignal 'Value':Connect(
                     function()
                         Text.Transparency = Dummy.Value
-                        -- Text.OutlineTransparency = 1 - Dummy.Value;
                         AMT.Transparency = 1 - Dummy.Value
                     end
                 )
@@ -2453,22 +2590,16 @@ function CreateMenu(NewPosition) -- Create Menu
                 end
 
                 Sliders[#Sliders + 1] = CSlider
-
-                -- local Percent = (v.Value / CSlider.Max) * 100;
-                -- local Size = math.abs(Line.From.X - Line.To.X);
-                -- local Value = Size * (Percent / 100); -- this shit's inaccurate but fuck it i'm not even gonna bother fixing it
-
                 Slider.Position = Line.Position + V2New(35, 0)
 
                 v.BaseSize = BaseSize
                 v.BasePosition = BasePosition
-            -- AMT.Position = BasePosition + V2New(BaseSize.X - AMT.TextBounds.X - 10, -10)
             end
         end
     )
     local FirstItem = false
     GetTableData(Options)(
-        function(i, v) -- just to make sure certain things are drawn before or after others, too lazy to actually sort table
+        function(i, v)
             if typeof(v.Value) == 'EnumItem' then
                 CPos = CPos + (not FirstItem and 30 or 25)
                 FirstItem = true
@@ -2529,7 +2660,7 @@ function CreateMenu(NewPosition) -- Create Menu
         end
     )
     GetTableData(Options)(
-        function(i, v) -- just to make sure certain things are drawn before or after others, too lazy to actually sort table
+        function(i, v)
             if typeof(v.Value) == 'function' then
                 local BaseSize = V2New(BaseSize.X, 30)
                 local BasePosition =
@@ -2565,8 +2696,6 @@ function CreateMenu(NewPosition) -- Create Menu
                         OutlineOpacity = 0.5
                     }
                 )
-
-            -- BindText.Position = BasePosition + V2New(BaseSize.X - BindText.TextBounds.X - 10, -10);
             end
         end
     )
@@ -2578,7 +2707,6 @@ function CreateMenu(NewPosition) -- Create Menu
         end
     )
 
-    -- this has to be at the bottom cuz proto drawing api doesnt have zindex :triumph:
     Menu:AddMenuInstance(
         'Cursor1',
         'Line',
@@ -2615,7 +2743,7 @@ CreateMenu()
 task.delay(
     0.1,
     function()
-        SubMenu:Show(V2New()) -- Create the submenu
+        SubMenu:Show(V2New())
         SubMenu:Hide()
     end
 )
@@ -2664,10 +2792,6 @@ shared.UESP_InputBeganCon =
                         v.Line.Position.Y,
                         v.Line.Position.X + v.Line.Size.X,
                         v.Line.Position.Y + v.Line.Size.Y
-                        -- v.Line.From.X	- (v.Slider.Radius);
-                        -- v.Line.From.Y	- (v.Slider.Radius);
-                        -- v.Line.To.X		+ (v.Slider.Radius);
-                        -- v.Line.To.Y		+ (v.Slider.Radius);
                     }
                     if MouseHoveringOver(Values) then
                         DraggingWhat = v
@@ -2723,7 +2847,7 @@ shared.UESP_InputEndedCon =
                     if MouseHoveringOver(Values) then
                         v.Option()
                         IgnoreOtherInput = true
-                        break -- prevent clicking 2 options
+                        break
                     end
                 end
                 for i, v in pairs(Sliders) do
@@ -2764,7 +2888,7 @@ shared.UESP_InputEndedCon =
                 Options.MenuOpen()
             elseif input.KeyCode == Options.ToggleKey.Value then
                 Options.Enabled()
-            elseif input.KeyCode.Name == 'F1' and UserInputService:IsMouseButtonPressed(1) and shared.am_ic3 then -- hehe hiden spectate feature cuz why not
+            elseif input.KeyCode.Name == 'F1' and UserInputService:IsMouseButtonPressed(1) and shared.am_ic3 then
                 local HD, LPlayer, LCharacter = 0.95
 
                 for i, Player in pairs(Players:GetPlayers()) do
@@ -2813,7 +2937,7 @@ shared.UESP_InputEndedCon =
     end
 )
 
-local function CameraCon() -- unnamed esp v1 sucks
+local function CameraCon()
     workspace.CurrentCamera:GetPropertyChangedSignal 'ViewportSize':Connect(
         function()
             TracerPosition = V2New(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y - 135)
@@ -2825,7 +2949,6 @@ CameraCon()
 
 local function ToggleMenu()
     if Options.MenuOpen.Value then
-        -- GUIService:SetMenuIsOpen(true);
         GetTableData(shared.MenuDrawingData.Instances)(
             function(i, v)
                 if OldData[v] then
@@ -2834,7 +2957,6 @@ local function ToggleMenu()
             end
         )
     else
-        -- GUIService:SetMenuIsOpen(false);
         GetTableData(shared.MenuDrawingData.Instances)(
             function(i, v)
                 OldData[v] = v.Visible
@@ -2882,7 +3004,7 @@ local function CheckRay(Instance, Distance, Position, Unit)
 
     if Hit and not Hit:IsDescendantOf(Model) then
         Pass = false
-        if Hit.Transparency >= .3 or not Hit.CanCollide and Hit.ClassName ~= 'Terrain' then -- Detect invisible walls
+        if Hit.Transparency >= .3 or not Hit.CanCollide and Hit.ClassName ~= 'Terrain' then
             IgnoreList[#IgnoreList + 1] = Hit
         end
     end
@@ -2964,7 +3086,7 @@ end
 
 local function CheckRelative(Position, Instance)
     if not Options.Enabled.Value then
-        return false
+        return V2New()
     end
 
     local Vector = V2New()
@@ -3012,15 +3134,15 @@ local function UpdatePlayerData()
                 Data.Instances['OutlineTracer'] =
                     Data.Instances['OutlineTracer'] or
                     NewDrawing 'Line' {
-                        Transparency = 0.75,
-                        Thickness = 5,
+                        Transparency = 1,
+                        Thickness = 3,
                         Color = Color3.new(0.1, 0.1, 0.1)
                     }
                 Data.Instances['Tracer'] =
                     Data.Instances['Tracer'] or
                     NewDrawing 'Line' {
                         Transparency = 1,
-                        Thickness = 2
+                        Thickness = 1
                     }
                 Data.Instances['NameTag'] =
                     Data.Instances['NameTag'] or
@@ -3070,31 +3192,30 @@ local function UpdatePlayerData()
 
                     local Position = WorldToViewport(Camera.CFrame:PointToWorldSpace(OPos))
 
-                    local Base = Relative * 120
-                    local Tip = Relative * 136
+                    local Base = Relative * math.clamp(Distance, 120, 180)
+                    local Tip = Relative * (math.clamp(Distance, 120, 180) + 16)
 
                     local BaseL = Base + RotateVector(Relative, 90) * 8
                     local BaseR = Base + RotateVector(Relative, -90) * 8
 
                     if Options.ShowTracers.Value then
-                        Tracer.Transparency = math.clamp(Distance / 200, 0.45, 0.8)
                         Tracer.Visible = true
+                        Tracer.Transparency = math.clamp(1 - (Distance / 200), 0.25, 0.75)
                         Tracer.From = TracerPosition
                         Tracer.To = V2New(Position.X, Position.Y)
                         Tracer.Color = Color
-                        OutlineTracer.Visible = true
-                        OutlineTracer.Transparency = Tracer.Transparency - 0.1
                         OutlineTracer.From = Tracer.From
                         OutlineTracer.To = Tracer.To
-                        OutlineTracer.Color = Color3.new(0.1, 0.1, 0.1)
+                        OutlineTracer.Transparency = Tracer.Transparency - 0.15
+                        OutlineTracer.Visible = true
                     else
                         Tracer.Visible = false
                         OutlineTracer.Visible = false
                     end
 
                     if Options.ShowArrows.Value then
-                        Arrow.Transparency = math.clamp(Distance / 200, 0.45, 0.8)
                         Arrow.Visible = true
+                        Arrow.Transparency = math.clamp(1 - (Distance / 200), 0.25, 0.75)
                         Arrow.PointA = RelativeToCenter(BaseL)
                         Arrow.PointB = RelativeToCenter(BaseR)
                         Arrow.PointC = RelativeToCenter(Tip)
@@ -3245,8 +3366,8 @@ local function UpdatePlayerData()
                     local Position = WorldToViewport(Camera.CFrame:PointToWorldSpace(OPos))
                     local Relative = CheckRelative(HumanoidRootPart.CFrame.Position, GetCharacter(LocalPlayer)).Unit
 
-                    local Base = Relative * 120
-                    local Tip = Relative * 136
+                    local Base = Relative * math.clamp(Distance, 120, 180)
+                    local Tip = Relative * (math.clamp(Distance, 120, 180) + 16)
 
                     local BaseL = Base + RotateVector(Relative, 90) * 8
                     local BaseR = Base + RotateVector(Relative, -90) * 8
@@ -3275,8 +3396,8 @@ local function UpdatePlayerData()
                     end
 
                     if Options.ShowArrows.Value then
-                        Arrow.Transparency = math.clamp(1 - (Distance / 200), 0.25, 0.75)
                         Arrow.Visible = true
+                        Arrow.Transparency = math.clamp(1 - (Distance / 200), 0.25, 0.75)
                         Arrow.PointA = RelativeToCenter(BaseL)
                         Arrow.PointB = RelativeToCenter(BaseR)
                         Arrow.PointC = RelativeToCenter(Tip)
@@ -3308,9 +3429,9 @@ local function UpdatePlayerData()
                             NameTag.Text = v.Name .. (Options.ShowDisplay.Value and ' [' .. v.DisplayName .. ']' or '')
                             NameTag.Text = NameTag.Text .. (CustomPlayerTag and CustomPlayerTag(v) or '')
 
-                            for i, v in pairs(Fonts) do
-                                if v then
-                                    NameTag.Font = Drawing.Fonts[i]
+                            for x, y in pairs(Fonts) do
+                                if y then
+                                    NameTag.Font = Drawing.Fonts[x]
                                 end
                             end
                         else
