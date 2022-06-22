@@ -354,7 +354,7 @@ local Modules = {
                     if not v.Name:match 'Printer' then
                         continue
                     end
-        
+
                     local Properties = v:FindFirstChild 'Properties'
                     if not Properties then
                         continue
@@ -362,11 +362,11 @@ local Modules = {
                     local Main = v:FindFirstChild 'hitbox'
                     local Owner = Properties:FindFirstChild 'Owner'
                     local Money = Properties:FindFirstChild 'CurrentPrinted'
-        
+
                     if Main and Owner and Money then
                         local O = Owner.Value and tostring(Owner.Value) or 'no one'
                         local M = tostring(Money.Value)
-        
+
                         pcall(
                             RenderList.AddOrUpdateInstance,
                             RenderList,
@@ -424,30 +424,32 @@ local Modules = {
         end
     },
     [4671157242] = {
-        -- Black Magic 1
         CustomPlayerTag = function(Player)
             local Name = ''
+            local Stats = Player:FindFirstChild 'leaderstats'
 
-            if Player:FindFirstChild 'leaderstats' then
-                local Rank = Player.leaderstats:FindFirstChild 'Rank'
-                local Spree = Player.leaderstats:FindFirstChild 'Spree'
+            if Stats then
+                local Rank = Stats:FindFirstChild 'Rank'
+                local Spree = Stats:FindFirstChild 'Spree'
 
-                Name = string.format('\n[%s] [Spree: %s]', Rank.Value, Spree.Value)
+                if Rank and Spree then
+                    Name = string.format('\n[%s] [Spree: %s]', Rank.Value, Spree.Value)
+                end
             end
 
             return Name
         end
     },
     [1458767429] = {
-        -- Anime Battle Arena
         CustomPlayerTag = function(Player)
-            local Moves = {}
-            local CDs = {}
-
             local Name = '\n'
 
-            if Player:FindFirstChild 'Backpack' then
-                for i, v in pairs(Player.Backpack:GetChildren()) do
+            local CDs = {}
+            local Moves = {}
+            local Backpack = Player:FindFirstChild 'Backpack'
+
+            if Backpack then
+                for i, v in pairs(Backpack:GetChildren()) do
                     if v:IsA 'BackpackItem' then
                         table.insert(Moves, v)
                     end
@@ -456,9 +458,10 @@ local Modules = {
 
             if #Moves > 0 then
                 for i, v in pairs(Moves) do
-                    if v:FindFirstChild 'CD' then
-                        local CD = v.CD
-                        table.insert(CDs, string.format('[%s | %s/20]', v.Name, CD.Value))
+                    local Cooldown = v:FindFirstChild 'CD'
+
+                    if Cooldown then
+                        table.insert(CDs, string.format('[%s | %s/20]', v.Name, Cooldown.Value))
                     end
                 end
             end
@@ -471,7 +474,6 @@ local Modules = {
         end
     },
     [9187108855] = {
-        -- Soul War [Karakura Town]
         CustomESP = function()
             local Living = workspace:FindFirstChild 'Alive'
             local Player = {}
@@ -482,26 +484,27 @@ local Modules = {
                 end
             end
 
-            for i, v in pairs(Living:GetChildren()) do
-                if not table.find(Player, v) then
-                    local Main = v:FindFirstChild 'HumanoidRootPart'
-                    local Hum = v:FindFirstChild 'Humanoid'
+            if Living then
+                for i, v in pairs(Living:GetChildren()) do
+                    if not table.find(Player, v) then
+                        local Main = v:FindFirstChild 'HumanoidRootPart'
+                        local Hum = v:FindFirstChild 'Humanoid'
+                        local Tag = ''
 
-                    local Name = v.Name
+                        if not string.find(v.Name, 'Trainee') then
+                            Tag = string.gsub(v.Name, '%d+', '')
+                        end
 
-                    if not string.find(Name, 'Trainee') then
-                        Name = string.gsub(v.Name, '%d+', '')
-                    end
-
-                    if Main and Hum then
-                        pcall(
-                            RenderList.AddOrUpdateInstance,
-                            RenderList,
-                            v,
-                            Main,
-                            string.format('[%s] [%s/%s]', Name, math.floor(Hum.Health), Hum.MaxHealth),
-                            Color3.fromRGB(255, 185, 100)
-                        )
+                        if Main and Hum then
+                            pcall(
+                                RenderList.AddOrUpdateInstance,
+                                RenderList,
+                                v,
+                                Main,
+                                string.format('[%s] [%s/%s]', Tag, math.floor(Hum.Health), Hum.MaxHealth),
+                                Color3.fromRGB(255, 185, 100)
+                            )
+                        end
                     end
                 end
             end
@@ -511,13 +514,9 @@ local Modules = {
             local Character = GetCharacter(Player)
 
             if Character then
-                local Reiatsu = ''
+                local Reiatsu = Character:FindFirstChild 'Reiatsu'
 
-                if Character:FindFirstChild 'Reiatsu' then
-                    Reiatsu = Character.Reiatsu
-                end
-
-                if not IsStringEmpty(Reiatsu) then
+                if Reiatsu then
                     Name = string.format('\n[%s]', Reiatsu.Value)
                 end
             end
@@ -526,7 +525,6 @@ local Modules = {
         end
     },
     [8860321655] = {
-        -- Soul War [Hueco Mundo]
         CustomESP = function()
             local Living = workspace:FindFirstChild 'Alive'
             local Player = {}
@@ -537,26 +535,27 @@ local Modules = {
                 end
             end
 
-            for i, v in pairs(Living:GetChildren()) do
-                if not table.find(Player, v) then
-                    local Main = v:FindFirstChild 'HumanoidRootPart'
-                    local Hum = v:FindFirstChild 'Humanoid'
+            if Living then
+                for i, v in pairs(Living:GetChildren()) do
+                    if not table.find(Player, v) then
+                        local Main = v:FindFirstChild 'HumanoidRootPart'
+                        local Hum = v:FindFirstChild 'Humanoid'
+                        local Tag = ''
 
-                    local Name = v.Name
+                        if not string.find(v.Name, 'Trainee') then
+                            Tag = string.gsub(v.Name, '%d+', '')
+                        end
 
-                    if not string.find(Name, 'Trainee') then
-                        Name = string.gsub(v.Name, '%d+', '')
-                    end
-
-                    if Main and Hum then
-                        pcall(
-                            RenderList.AddOrUpdateInstance,
-                            RenderList,
-                            v,
-                            Main,
-                            string.format('[%s] [%s/%s]', Name, math.floor(Hum.Health), Hum.MaxHealth),
-                            Color3.fromRGB(255, 185, 100)
-                        )
+                        if Main and Hum then
+                            pcall(
+                                RenderList.AddOrUpdateInstance,
+                                RenderList,
+                                v,
+                                Main,
+                                string.format('[%s] [%s/%s]', Tag, math.floor(Hum.Health), Hum.MaxHealth),
+                                Color3.fromRGB(255, 185, 100)
+                            )
+                        end
                     end
                 end
             end
@@ -566,13 +565,9 @@ local Modules = {
             local Character = GetCharacter(Player)
 
             if Character then
-                local Reiatsu = ''
+                local Reiatsu = Character:FindFirstChild 'Reiatsu'
 
-                if Character:FindFirstChild 'Reiatsu' then
-                    Reiatsu = Character.Reiatsu
-                end
-
-                if not IsStringEmpty(Reiatsu) then
+                if Reiatsu then
                     Name = string.format('\n[%s]', Reiatsu.Value)
                 end
             end
@@ -581,7 +576,6 @@ local Modules = {
         end
     },
     [7056922815] = {
-        -- Reaper 2 [Katakura Town]
         CustomESP = function()
             local Living = workspace:FindFirstChild 'Living'
             local Player = {}
@@ -592,39 +586,35 @@ local Modules = {
                 end
             end
 
-            for i, v in pairs(Living:GetChildren()) do
-                if not table.find(Player, v) then
-                    local Main = v:FindFirstChild 'HumanoidRootPart'
-                    local Hum = v:FindFirstChild 'Humanoid'
+            if Living then
+                for i, v in pairs(Living:GetChildren()) do
+                    if not table.find(Player, v) then
+                        local Main = v:FindFirstChild 'HumanoidRootPart'
+                        local Hum = v:FindFirstChild 'Humanoid'
 
-                    if Main and Hum then
-                        pcall(
-                            RenderList.AddOrUpdateInstance,
-                            RenderList,
-                            v,
-                            Main,
-                            string.format('[%s] [%s/%s]', v.Name, math.floor(Hum.Health), Hum.MaxHealth),
-                            Color3.fromRGB(255, 185, 100)
-                        )
+                        if Main and Hum then
+                            pcall(
+                                RenderList.AddOrUpdateInstance,
+                                RenderList,
+                                v,
+                                Main,
+                                string.format('[%s] [%s/%s]', v.Name, math.floor(Hum.Health), Hum.MaxHealth),
+                                Color3.fromRGB(255, 185, 100)
+                            )
+                        end
                     end
                 end
             end
         end,
         CustomPlayerTag = function(Player)
             local Name = ''
+            local Stats = Player:FindFirstChild 'Status'
 
-            if Player:FindFirstChild 'Status' then
-                local Reiatsu = ''
-                local MaxReiatsu = ''
+            if Stats then
+                local Reiatsu = Stats:FindFirstChild 'Reiatsu'
+                local MaxReiatsu = Stats:FindFirstChild 'MaxReiatsu'
 
-                if Player.Status:FindFirstChild 'Reiatsu' then
-                    Reiatsu = Player.Status.Reiatsu
-                end
-                if Player.Status:FindFirstChild 'MaxReiatsu' then
-                    MaxReiatsu = Player.Status.MaxReiatsu
-                end
-
-                if not IsStringEmpty(Reiatsu) and not IsStringEmpty(MaxReiatsu) then
+                if Reiatsu and MaxReiatsu then
                     Name = string.format('\n[%s/%s]', Reiatsu.Value, MaxReiatsu.Value)
                 end
             end
@@ -633,7 +623,6 @@ local Modules = {
         end
     },
     [8934886191] = {
-        -- Reaper 2 [Soul Society]
         CustomESP = function()
             local Living = workspace:FindFirstChild 'Living'
             local Player = {}
@@ -644,39 +633,35 @@ local Modules = {
                 end
             end
 
-            for i, v in pairs(Living:GetChildren()) do
-                if not table.find(Player, v) then
-                    local Main = v:FindFirstChild 'HumanoidRootPart'
-                    local Hum = v:FindFirstChild 'Humanoid'
+            if Living then
+                for i, v in pairs(Living:GetChildren()) do
+                    if not table.find(Player, v) then
+                        local Main = v:FindFirstChild 'HumanoidRootPart'
+                        local Hum = v:FindFirstChild 'Humanoid'
 
-                    if Main and Hum then
-                        pcall(
-                            RenderList.AddOrUpdateInstance,
-                            RenderList,
-                            v,
-                            Main,
-                            string.format('[%s] [%s/%s]', v.Name, math.floor(Hum.Health), Hum.MaxHealth),
-                            Color3.fromRGB(255, 185, 100)
-                        )
+                        if Main and Hum then
+                            pcall(
+                                RenderList.AddOrUpdateInstance,
+                                RenderList,
+                                v,
+                                Main,
+                                string.format('[%s] [%s/%s]', v.Name, math.floor(Hum.Health), Hum.MaxHealth),
+                                Color3.fromRGB(255, 185, 100)
+                            )
+                        end
                     end
                 end
             end
         end,
         CustomPlayerTag = function(Player)
             local Name = ''
+            local Stats = Player:FindFirstChild 'Status'
 
-            if Player:FindFirstChild 'Status' then
-                local Reiatsu = ''
-                local MaxReiatsu = ''
+            if Stats then
+                local Reiatsu = Stats:FindFirstChild 'Reiatsu'
+                local MaxReiatsu = Stats:FindFirstChild 'MaxReiatsu'
 
-                if Player.Status:FindFirstChild 'Reiatsu' then
-                    Reiatsu = Player.Status.Reiatsu
-                end
-                if Player.Status:FindFirstChild 'MaxReiatsu' then
-                    MaxReiatsu = Player.Status.MaxReiatsu
-                end
-
-                if not IsStringEmpty(Reiatsu) and not IsStringEmpty(MaxReiatsu) then
+                if Reiatsu and MaxReiatsu then
                     Name = string.format('\n[%s/%s]', Reiatsu.Value, MaxReiatsu.Value)
                 end
             end
@@ -685,7 +670,6 @@ local Modules = {
         end
     },
     [5208655184] = {
-        -- Rogue Lineage [Gaia]
         CustomPlayerTag = function(Player)
             if game.PlaceVersion < 457 then
                 return ''
@@ -784,7 +768,6 @@ local Modules = {
         end
     },
     [3541987450] = {
-        -- Rogue Lineage [Khei]
         CustomPlayerTag = function(Player)
             local Name = ''
 
@@ -892,117 +875,106 @@ local Modules = {
         end
     },
     [7721054009] = {
-        -- Rogue Simulator
         CustomPlayerTag = function(Player)
-            local Data = Player:FindFirstChild 'Data'
-
             local Name = ''
-            local FirstName = Player:FindFirstChild 'RaceName'.Value
-            local LastName = Data:FindFirstChild 'HouseName'.Value
+            local Data = Player:FindFirstChild 'Data'
+            local Location = Player:FindFirstChild 'Location'
 
-            if typeof(FirstName) == 'string' and #FirstName > 0 then
-                local Specs = {}
-                local Place = {}
-                Name = Name .. '\n['
+            local Specs = {}
+            local Place = {}
 
-                if not IsStringEmpty(FirstName) then
-                    Name = Name .. FirstName
-                end
-                if not IsStringEmpty(LastName) then
-                    Name = Name .. ' ' .. LastName
+            if Data then
+                local FullName = Data:FindFirstChild 'oName'
+
+                if FullName then
+                    Name = string.format('\n[%s]', string.gsub(FullName.Value, '%s+$', ''))
                 end
 
                 if not IsStringEmpty(Name) then
-                    Name = Name .. ']'
-                end
+                    local Race = Data:FindFirstChild 'Race'
+                    local Class = Data:FindFirstChild 'Class'
+                    local Artifact = Data:FindFirstChild 'Artifact'
 
-                if Data then
-                    if Data and Data:FindFirstChild 'Race' then
-                        table.insert(Specs, Data:FindFirstChild 'Race'.Value)
+                    if Race then
+                        table.insert(Specs, Race.Value)
                     end
-                    if Data and Data:FindFirstChild 'Class' then
-                        table.insert(Specs, Data:FindFirstChild 'Class'.Value)
+                    if Class then
+                        table.insert(Specs, Class.Value)
                     end
-                    if Data and Data:FindFirstChild 'IsVamp' then
-                        if Data:FindFirstChild 'IsVamp'.Value then
-                            table.insert(Specs, 'V')
+                    if Artifact then
+                        if Artifact.Value ~= 'N/A' then
+                            table.insert(Specs, Artifact.Value)
                         end
                     end
-                end
 
-                if Player:FindFirstChild 'Location' then
-                    table.insert(Place, Player:FindFirstChild 'Location'.Value)
+                    if Location then
+                        table.insert(Place, Location.Value)
+                    end
                 end
+            end
 
-                if #Specs > 0 then
-                    Name = Name .. '\n[' .. table.concat(Specs, '-') .. ']'
-                end
+            if #Specs > 0 then
+                Name = Name .. string.format('\n[%s]', table.concat(Specs, '-'))
+            end
 
-                if #Place > 0 then
-                    Name = Name .. ' [' .. table.concat(Place, '-') .. ']'
-                end
+            if #Place > 0 then
+                Name = Name .. string.format(' [%s]', table.concat(Place, '-'))
             end
 
             return Name
         end
     },
     [9530846958] = {
-        -- Epsilon Lineage 2
         CustomPlayerTag = function(Player)
-            local Data = Player:FindFirstChild 'Data'
-
             local Name = ''
-            local FirstName = Player:FindFirstChild 'RaceName'.Value
-            local LastName = Data:FindFirstChild 'HouseName'.Value
+            local Data = Player:FindFirstChild 'Data'
+            local Location = Player:FindFirstChild 'Location'
 
-            if typeof(FirstName) == 'string' and #FirstName > 0 then
-                local Specs = {}
-                local Place = {}
-                Name = Name .. '\n['
+            local Specs = {}
+            local Place = {}
 
-                if not IsStringEmpty(FirstName) then
-                    Name = Name .. FirstName
-                end
-                if not IsStringEmpty(LastName) then
-                    Name = Name .. ' ' .. LastName
+            if Data then
+                local FullName = Data:FindFirstChild 'oName'
+
+                if FullName then
+                    Name = string.format('\n[%s]', string.gsub(FullName.Value, '%s+$', ''))
                 end
 
                 if not IsStringEmpty(Name) then
-                    Name = Name .. ']'
-                end
+                    local Race = Data:FindFirstChild 'Race'
+                    local Class = Data:FindFirstChild 'Class'
+                    local Artifact = Data:FindFirstChild 'Artifact'
 
-                if Data then
-                    if Data and Data:FindFirstChild 'Race' then
-                        table.insert(Specs, Data:FindFirstChild 'Race'.Value)
+                    if Race then
+                        table.insert(Specs, Race.Value)
                     end
-                    if Data and Data:FindFirstChild 'Class' then
-                        table.insert(Specs, Data:FindFirstChild 'Class'.Value)
+                    if Class then
+                        table.insert(Specs, Class.Value)
                     end
-                    if Data and Data:FindFirstChild 'IsVamp' then
-                        if Data:FindFirstChild 'IsVamp'.Value then
-                            table.insert(Specs, 'V')
+                    if Artifact then
+                        if Artifact.Value ~= 'N/A' then
+                            table.insert(Specs, Artifact.Value)
                         end
                     end
-                end
 
-                if Player:FindFirstChild 'Location' then
-                    table.insert(Place, Player:FindFirstChild 'Location'.Value)
+                    if Location then
+                        table.insert(Place, Location.Value)
+                    end
                 end
+            end
 
-                if #Specs > 0 then
-                    Name = Name .. '\n[' .. table.concat(Specs, '-') .. ']'
-                end
+            if #Specs > 0 then
+                Name = Name .. string.format('\n[%s]', table.concat(Specs, '-'))
+            end
 
-                if #Place > 0 then
-                    Name = Name .. ' [' .. table.concat(Place, '-') .. ']'
-                end
+            if #Place > 0 then
+                Name = Name .. string.format(' [%s]', table.concat(Place, '-'))
             end
 
             return Name
         end
     },
     [4691401390] = {
-        -- Vast Realm
         CustomCharacter = function(Player)
             if workspace:FindFirstChild 'Players' then
                 return workspace.Players:FindFirstChild(Player.Name)
@@ -1010,7 +982,6 @@ local Modules = {
         end
     },
     [6032399813] = {
-        -- Deepwoken [Etrean]
         CustomPlayerTag = function(Player)
             local Name = ''
             CharacterName = Player:GetAttribute 'CharacterName'
@@ -1051,7 +1022,6 @@ local Modules = {
         end
     },
     [5735553160] = {
-        -- Deepwoken [Depths]
         CustomPlayerTag = function(Player)
             local Name = ''
             CharacterName = Player:GetAttribute 'CharacterName'
@@ -1812,7 +1782,7 @@ local function CreateDrawingsTable()
         if not Object or (IsSynapse and not Object.__SELF.__OBJECT_EXISTS) then
             local Type = Index:sub(1, Index:find '-' - 1)
 
-            Success, Object = pcall(Drawing.new, Type)
+            local Success, Object = pcall(Drawing.new, Type)
 
             if not Object or not Success then
                 return function()
