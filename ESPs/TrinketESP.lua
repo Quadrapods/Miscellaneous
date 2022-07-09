@@ -2,6 +2,8 @@
 local ESP = loadstring(syn.request({Url = 'https://raw.githubusercontent.com/Quadrapods/ESP-Library/main/Library.lua', Method = 'GET'}).Body)();
 
 ---------------------------------------------------------------------------------------------------- // Declarations
+getgenv().TRINKET_ESP_ENABLED = true;
+
 local a = game:GetService('Players').LocalPlayer;
 local b = game:GetService('UserInputService');
 local c = game:GetService('HttpService');
@@ -182,7 +184,7 @@ local function UpdateESP(a, b, c)
 
     y = d.RenderStepped:Connect(function()
         if (a.Parent ~= nil) then
-            if (ESP:GetObjectRender(a)) then
+            if (ESP:GetObjectRender(a) and TRINKET_ESP_ENABLED) then
                 b.Part1.Position = ESP:GetObjectVector(a, 0, 40);
                 b.Part2.Position = ESP:GetObjectVector(a, 0, 25);
                 b.Part3.Position = ESP:GetObjectVector(a);
@@ -257,11 +259,13 @@ end
 
 f.DescendantAdded:Connect(function(v)
     d.RenderStepped:Wait()
-    if (v and v.Parent and v:IsA('ClickDetector')) then
-        local a = v.Parent.Parent;
+    if (TRINKET_ESP_ENABLED) then
+        if (v and v.Parent and v:IsA('ClickDetector')) then
+            local a = v.Parent.Parent;
 
-        if (a and a:IsA('BasePart')) then
-            ESP.Add(a);
+            if (a and a:IsA('BasePart')) then
+                ESP.Add(a);
+            end
         end
     end
 end)
