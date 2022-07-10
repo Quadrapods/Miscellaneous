@@ -48,6 +48,7 @@ local Artifacts = {
         'Scroll',
         'Goblet',
         'Amulet',
+        'Candy',
         'Ring',
         'Opal',
         'Gem',
@@ -59,6 +60,7 @@ local SizeChecks = {
     ['Idol of the Forgotten'] = i(0.700989, 0.655492, 0.682998),
     ['Philosopher\'s Stone'] = i(0.443721, 0.44358, 0.43335),
     ['Lannis\'s Amulet'] = i(0.195154, 1.81078, 1.04045),
+    ['Howler Friend'] = i(0.312539, 0.17, 0.934311),
     ['Spider Cloak'] = i(1.9, 1.79, 1.81),
     ['Phoenix Down'] = i(0.444, 0.444, 0.433),
     ['Ice Essence'] = i(0.443721, 0.44358, 0.43335),
@@ -71,6 +73,7 @@ local SizeChecks = {
     ['Scroll'] = i(0.208974, 0.554892, 0.457498),
     ['Goblet'] = i(0.905316, 1.55034, 0.901762),
     ['Amulet'] = i(0.633356, 0.116539, 1.5662),
+    ['Candy'] = i(1.12608, 0.75947, 0.563013),
     ['Ring'] = i(0.674558, 0.821674, 0.407528),
     ['Opal'] = i(0.4, 0.5, 0.3),
     ['Gem'] = i(0.8, 0.524, 0.8),
@@ -156,7 +159,11 @@ local function GetSpecialName(a, b)
 
                 if (e == h(1, 0.8, 0)) then
                     return ('Phoenix Down');
-                else
+                end
+                if (e == h(0.45098, 1, 0)) then
+                    return ('Mysterious Artifact');
+                end
+                if (e == h(1, 0.03921568766236305, 0.03921568766236305)) then
                     return ('Azael Horns');
                 end
             end
