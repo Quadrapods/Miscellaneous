@@ -84,6 +84,45 @@ local d = {
             end
         end
     },
+    ['MainScript'] = {
+        GetCustomCooldown = function()
+            local x = game:GetService('UserInputService');
+            local y = {};
+            local z;
+
+            syn.set_thread_identity(2);
+
+            z = getconnections(x.InputBegan)[1].Function;
+
+            syn.set_thread_identity(7);
+
+            for _, v in ipairs(debug.getupvalues(z)) do
+                if (type(v) == 'function') then
+                    local x = debug.getupvalues(v);
+
+                    if (table.getn(x) >= 40) then
+                        z = v;
+                    end
+                end
+            end
+
+            for i, v in pairs(debug.getupvalues(z)) do
+                if (i >= 30 and type(v) == 'boolean') then
+                    table.insert(y, i);
+                end
+            end
+
+            if (table.getn(y) > 0) then
+                while (true) do
+                    task.wait()
+
+                    for _, v in ipairs(y) do
+                        debug.setupvalue(z, v, true);
+                    end
+                end
+            end
+        end
+    },
 }
 ---------------------------------------------------------------------------------------------------- // Functions
 local function GetKeyEnabled()
