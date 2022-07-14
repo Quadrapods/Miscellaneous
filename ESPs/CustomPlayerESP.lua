@@ -26,7 +26,6 @@ local Rainbow = false
 local DragOffset = V2New()
 local DraggingWhat = nil
 local OldData = {}
-local IgnoreList = {}
 local Fonts = {UI = false, System = false, Plex = false, Monospace = false}
 local EnemyColor = Color3.new(1, 0, 0)
 local TeamColor = Color3.new(0, 1, 0)
@@ -41,6 +40,11 @@ Signal.__index = Signal
 local GetCharacter
 local CurrentColorPicker
 local Spectating
+
+local IgnoreList = {LocalPlayer.Character, Mouse.TargetFilter, Camera}
+local RaycastList = RaycastParams.new()
+RaycastList.FilterDescendantsInstances = IgnoreList
+RaycastList.FilterType = Enum.RaycastFilterType.Blacklist
 
 local Executor = (identifyexecutor or (function()
         return ''
@@ -105,6 +109,20 @@ local function FromHex(HEX)
         tonumber('0x' .. HEX:sub(3, 4)),
         tonumber('0x' .. HEX:sub(5, 6))
     )
+end
+
+local function FindFirstChild(Instance, Name)
+    if Instance then
+        local Children = Instance:GetChildren()
+
+        for i, v in pairs(Children) do
+            if v:IsA 'BasePart' and v.Name == Name then
+                return v
+            end
+        end
+    end
+
+    return false
 end
 
 local function IsStringEmpty(String)
@@ -669,6 +687,81 @@ local Modules = {
             return Name
         end
     },
+    [7719700868] = {
+        CustomPlayerTag = function(Player)
+            local Name = ''
+            local Stats = Player:FindFirstChild 'leaderstats'
+
+            local Specs = {}
+            local Place = {}
+
+            if Stats then
+                local FirstName = Stats:FindFirstChild 'FirstName'
+                local LastName = Stats:FindFirstChild 'LastName'
+
+                if FirstName then
+                    Name = FirstName.Value
+
+                    if LastName then
+                        Name = string.gsub(string.format('%s %s', FirstName.Value, LastName.Value), '%s+$', '')
+                    end
+
+                    if string.find(Name, utf8.char(8217)) then
+                        Name = string.gsub(Name, utf8.char(8217), '\'')
+                    end
+
+                    Name = string.format('\n[%s]', Name)
+                end
+
+                if not IsStringEmpty(Name) then
+                    local Race = Stats:FindFirstChild 'Race'
+                    local Class = Stats:FindFirstChild 'Class'
+                    local Faction = Stats:FindFirstChild 'Faction'
+
+                    local Planet = Stats:FindFirstChild 'Planet'
+                    local Area = Stats:FindFirstChild 'Area'
+
+                    if Race then
+                        if not IsStringEmpty(Race.Value) then
+                            table.insert(Specs, Race.Value)
+                        end
+                    end
+                    if Class then
+                        if not IsStringEmpty(Class.Value) then
+                            table.insert(Specs, Class.Value)
+                        end
+                    end
+                    if Faction then
+                        if not IsStringEmpty(Faction.Value) then
+                            table.insert(Specs, Faction.Value)
+                        end
+                    end
+
+                    if Planet then
+                        if not IsStringEmpty(Planet.Value) then
+                            table.insert(Place, Planet.Value)
+
+                            if Area then
+                                if not IsStringEmpty(Area.Value) then
+                                    table.insert(Place, Area.Value)
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+
+            if #Specs > 0 then
+                Name = Name .. string.format('\n[%s]', table.concat(Specs, '-'))
+            end
+
+            if #Place > 0 then
+                Name = Name .. string.format(' [%s]', table.concat(Place, '-'))
+            end
+
+            return Name
+        end
+    },
     [5208655184] = {
         CustomPlayerTag = function(Player)
             if game.PlaceVersion < 457 then
@@ -869,56 +962,6 @@ local Modules = {
                 if #Extra > 0 then
                     Name = Name .. ' [' .. table.concat(Extra, '-') .. ']'
                 end
-            end
-
-            return Name
-        end
-    },
-    [7721054009] = {
-        CustomPlayerTag = function(Player)
-            local Name = ''
-            local Data = Player:FindFirstChild 'Data'
-            local Location = Player:FindFirstChild 'Location'
-
-            local Specs = {}
-            local Place = {}
-
-            if Data then
-                local FullName = Data:FindFirstChild 'oName'
-
-                if FullName then
-                    Name = string.format('\n[%s]', string.gsub(FullName.Value, '%s+$', ''))
-                end
-
-                if not IsStringEmpty(Name) then
-                    local Race = Data:FindFirstChild 'Race'
-                    local Class = Data:FindFirstChild 'Class'
-                    local Artifact = Data:FindFirstChild 'Artifact'
-
-                    if Race then
-                        table.insert(Specs, Race.Value)
-                    end
-                    if Class then
-                        table.insert(Specs, Class.Value)
-                    end
-                    if Artifact then
-                        if Artifact.Value ~= 'N/A' then
-                            table.insert(Specs, Artifact.Value)
-                        end
-                    end
-
-                    if Location then
-                        table.insert(Place, Location.Value)
-                    end
-                end
-            end
-
-            if #Specs > 0 then
-                Name = Name .. string.format('\n[%s]', table.concat(Specs, '-'))
-            end
-
-            if #Place > 0 then
-                Name = Name .. string.format(' [%s]', table.concat(Place, '-'))
             end
 
             return Name
@@ -2963,19 +3006,18 @@ local function CheckRay(Instance, Distance, Position, Unit)
     end
 
     local _Ray = Ray.new(Position, Unit * Distance)
+    local Hit = workspace:Raycast(_Ray.Origin, _Ray.Direction, RaycastList)
 
-    local List = {LocalPlayer.Character, Camera, Mouse.TargetFilter}
+    if Hit then
+        local HitInstance = Hit.Instance
 
-    for i, v in pairs(IgnoreList) do
-        table.insert(List, v)
-    end
+        if not HitInstance:IsDescendantOf(Model) then
+            Pass = false
 
-    local Hit = workspace:FindPartOnRayWithIgnoreList(_Ray, List)
-
-    if Hit and not Hit:IsDescendantOf(Model) then
-        Pass = false
-        if Hit.Transparency >= .3 or not Hit.CanCollide and Hit.ClassName ~= 'Terrain' then
-            IgnoreList[#IgnoreList + 1] = Hit
+            if HitInstance.Transparency >= 0.3 or not HitInstance.CanCollide and HitInstance.ClassName ~= 'Terrain' then
+                table.insert(IgnoreList, HitInstance)
+                RaycastList.FilterDescendantsInstances = IgnoreList
+            end
         end
     end
 
@@ -3012,7 +3054,7 @@ local function CheckPlayer(Player, Character)
             Pass = false
         end
 
-        local Head = Character:FindFirstChild 'Head'
+        local Head = FindFirstChild(Character, 'Head')
 
         if Pass and Character and Head then
             Distance = (Camera.CFrame.Position - Head.Position).Magnitude
@@ -3041,8 +3083,7 @@ local function CheckDistance(Instance)
     if Instance ~= nil then
         Distance = (Camera.CFrame.Position - Instance.Position).Magnitude
         if Options.VisCheck.Value then
-            Pass =
-                CheckRay(Instance, Distance, Camera.CFrame.Position, (Instance.Position - Camera.CFrame.Position).Unit)
+            Pass = CheckRay(Instance, Distance, Camera.CFrame.Position, (Instance.Position - Camera.CFrame.Position).Unit)
         end
         if Distance > Options.MaxDistance.Value then
             Pass = false
@@ -3308,9 +3349,9 @@ local function UpdatePlayerData()
             local Pass, Distance = CheckPlayer(v, Character)
 
             if Pass and Character then
-                local Humanoid = Character:FindFirstChildOfClass 'Humanoid'
-                local Head = Character:FindFirstChild 'Head'
                 local HumanoidRootPart = Character:FindFirstChild(CustomRootPartName or 'HumanoidRootPart')
+                local Humanoid = Character:FindFirstChildOfClass 'Humanoid'
+                local Head = FindFirstChild(Character, 'Head')
 
                 local Dead = (Humanoid and Humanoid:GetState().Name == 'Dead')
                 if type(GetAliveState) == 'function' then
