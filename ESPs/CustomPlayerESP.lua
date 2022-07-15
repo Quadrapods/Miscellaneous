@@ -3005,8 +3005,9 @@ local function CheckRay(Instance, Distance, Position, Unit)
         return false
     end
 
-    local _Ray = Ray.new(Position, Unit * Distance)
-    local Hit = workspace:Raycast(_Ray.Origin, _Ray.Direction, RaycastList)
+    local Origin = Position
+    local Direction = (Unit * Distance)
+    local Hit = workspace:Raycast(Origin, Direction, RaycastList)
 
     if Hit then
         local HitInstance = Hit.Instance
