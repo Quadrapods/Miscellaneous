@@ -2,9 +2,10 @@ local UserInputService = game:GetService 'UserInputService'
 local TweenService = game:GetService 'TweenService'
 local HttpService = game:GetService 'HttpService'
 local RunService = game:GetService 'RunService'
+local Workspace = game:GetService 'Workspace'
 local Players = game:GetService 'Players'
 local LocalPlayer = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
+local Camera = Workspace.CurrentCamera
 local Mouse = LocalPlayer:GetMouse()
 local CFNew = CFrame.new
 local C3New = Color3.new
@@ -336,8 +337,8 @@ local Modules = {
     },
     [2950983942] = {
         CustomCharacter = function(Player)
-            if workspace:FindFirstChild 'Players' then
-                return workspace.Players:FindFirstChild(Player.Name)
+            if Workspace:FindFirstChild 'Players' then
+                return Workspace.Players:FindFirstChild(Player.Name)
             end
         end
     },
@@ -353,7 +354,7 @@ local Modules = {
             return Name
         end,
         CustomESP = function()
-            local Entities = workspace:FindFirstChild 'MoneyPrinters'
+            local Entities = Workspace:FindFirstChild 'MoneyPrinters'
 
             if Entities then
                 for i, v in pairs(Entities:GetChildren()) do
@@ -385,7 +386,7 @@ local Modules = {
     },
     [4581966615] = {
         CustomESP = function()
-            local Entities = workspace:FindFirstChild 'Entities'
+            local Entities = Workspace:FindFirstChild 'Entities'
 
             if Entities then
                 for i, v in pairs(Entities:GetChildren()) do
@@ -418,8 +419,8 @@ local Modules = {
     },
     [4801598506] = {
         CustomESP = function()
-            if workspace:FindFirstChild 'Mobs' and workspace.Mobs:FindFirstChild 'Forest1' then
-                for i, v in pairs(workspace.Mobs.Forest1:GetChildren()) do
+            if Workspace:FindFirstChild 'Mobs' and Workspace.Mobs:FindFirstChild 'Forest1' then
+                for i, v in pairs(Workspace.Mobs.Forest1:GetChildren()) do
                     local Main = v:FindFirstChild 'Head'
                     local Hum = v:FindFirstChild 'Mob'
 
@@ -439,8 +440,8 @@ local Modules = {
     },
     [2555873122] = {
         CustomESP = function()
-            if workspace:FindFirstChild 'WoodPlanks' then
-                for i, v in pairs(workspace:GetChildren()) do
+            if Workspace:FindFirstChild 'WoodPlanks' then
+                for i, v in pairs(Workspace:GetChildren()) do
                     if v.Name == 'WoodPlanks' then
                         local Main = v:FindFirstChild 'Wood'
 
@@ -511,7 +512,7 @@ local Modules = {
     },
     [9187108855] = {
         CustomESP = function()
-            local Living = workspace:FindFirstChild 'Alive'
+            local Living = Workspace:FindFirstChild 'Alive'
             local Player = {}
 
             for i, v in pairs(Players:GetPlayers()) do
@@ -562,7 +563,7 @@ local Modules = {
     },
     [8860321655] = {
         CustomESP = function()
-            local Living = workspace:FindFirstChild 'Alive'
+            local Living = Workspace:FindFirstChild 'Alive'
             local Player = {}
 
             for i, v in pairs(Players:GetPlayers()) do
@@ -613,7 +614,7 @@ local Modules = {
     },
     [7056922815] = {
         CustomESP = function()
-            local Living = workspace:FindFirstChild 'Living'
+            local Living = Workspace:FindFirstChild 'Living'
             local Player = {}
 
             for i, v in pairs(Players:GetPlayers()) do
@@ -660,7 +661,7 @@ local Modules = {
     },
     [8934886191] = {
         CustomESP = function()
-            local Living = workspace:FindFirstChild 'Living'
+            local Living = Workspace:FindFirstChild 'Living'
             local Player = {}
 
             for i, v in pairs(Players:GetPlayers()) do
@@ -1037,8 +1038,8 @@ local Modules = {
     },
     [4691401390] = {
         CustomCharacter = function(Player)
-            if workspace:FindFirstChild 'Players' then
-                return workspace.Players:FindFirstChild(Player.Name)
+            if Workspace:FindFirstChild 'Players' then
+                return Workspace.Players:FindFirstChild(Player.Name)
             end
         end
     },
@@ -2963,7 +2964,7 @@ shared.UESP_InputEndedCon =
 )
 
 local function CameraCon()
-    workspace.CurrentCamera:GetPropertyChangedSignal 'ViewportSize':Connect(
+    Workspace.CurrentCamera:GetPropertyChangedSignal 'ViewportSize':Connect(
         function()
             TracerPosition = V2New(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y - 135)
         end
@@ -3008,7 +3009,7 @@ local function CheckRay(Instance, Distance, Position, Unit)
     if not Model then
         Model = Instance.Parent
 
-        if Model.Parent == workspace then
+        if Model.Parent == Workspace then
             Model = Instance
         end
     end
@@ -3019,7 +3020,7 @@ local function CheckRay(Instance, Distance, Position, Unit)
 
     local Origin = Position
     local Direction = (Unit * Distance)
-    local Hit = workspace:Raycast(Origin, Direction, RaycastList)
+    local Hit = Workspace:Raycast(Origin, Direction, RaycastList)
 
     if Hit then
         local HitInstance = Hit.Instance
@@ -3585,8 +3586,8 @@ local function Update()
     if tick() - LastInvalidCheck > 0.3 then
         LastInvalidCheck = tick()
 
-        if Camera.Parent ~= workspace then
-            Camera = workspace.CurrentCamera
+        if Camera.Parent ~= Workspace then
+            Camera = Workspace.CurrentCamera
             CameraCon()
             WTVP = Camera.WorldToViewportPoint
         end
