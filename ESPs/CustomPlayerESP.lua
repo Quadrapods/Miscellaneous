@@ -6,6 +6,8 @@ local Players = game:GetService 'Players'
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local Mouse = LocalPlayer:GetMouse()
+local CFNew = CFrame.new
+local C3New = Color3.new
 local V2New = Vector2.new
 local V3New = Vector3.new
 local WTVP = Camera.WorldToViewportPoint
@@ -27,18 +29,29 @@ local DragOffset = V2New()
 local DraggingWhat = nil
 local OldData = {}
 local Fonts = {UI = false, System = false, Plex = false, Monospace = false}
-local EnemyColor = Color3.new(1, 0, 0)
-local TeamColor = Color3.new(0, 1, 0)
+local EnemyColor = C3New(1, 0, 0)
+local TeamColor = C3New(0, 1, 0)
 local MenuLoaded = false
 local TracerPosition = V2New(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y - 135)
 local DragTracerPosition = false
 local SubMenu = {}
-local IsSynapse = syn and not PROTOSMASHER_LOADED
+local IsSynapse = syn
 local Connections = {Active = {}}
 local Signal = {}
 Signal.__index = Signal
-local GetCharacter
+
+local TInsert = table.insert
+local TConcat = table.concat
+local TFind = table.find
+
+local Format = string.format
+local Match = string.match
+local Find = string.find
+local GSub = string.gsub
+local Sub = string.sub
+
 local CurrentColorPicker
+local GetCharacter
 local Spectating
 
 local IgnoreList = {LocalPlayer.Character, Mouse.TargetFilter, Camera}
@@ -50,7 +63,7 @@ local Executor = (identifyexecutor or (function()
         return ''
     end))()
 local SupportedExploits = {'Synapse X', 'ScriptWare', 'Krnl', 'OxygenU', 'Temple'}
-local QUAD_SUPPORTED_EXPLOIT = table.find(SupportedExploits, Executor) ~= nil
+local QUAD_SUPPORTED_EXPLOIT = TFind(SupportedExploits, Executor) ~= nil
 
 shared.MenuDrawingData = shared.MenuDrawingData or {Instances = {}}
 shared.InstanceData = shared.InstanceData or {}
@@ -92,23 +105,13 @@ local LatestPrints =
 )
 
 local function print(...)
-    local Content = unpack {...}
+    local Content = table.unpack {...}
     local print = RealPrint
 
     if tick() - LatestPrints[Content] > 5 then
         LatestPrints[Content] = tick()
         print(Content)
     end
-end
-
-local function FromHex(HEX)
-    HEX = HEX:gsub('#', '')
-
-    return Color3.fromRGB(
-        tonumber('0x' .. HEX:sub(1, 2)),
-        tonumber('0x' .. HEX:sub(3, 4)),
-        tonumber('0x' .. HEX:sub(5, 6))
-    )
 end
 
 local function FindFirstChild(Instance, Name)
@@ -127,7 +130,7 @@ end
 
 local function IsStringEmpty(String)
     if type(String) == 'string' then
-        return String:match '^%s+$' ~= nil or #String == 0 or String == '' or false
+        return Match(String, '^%s+$') ~= nil or #String == 0 or String == '' or false
     end
 
     return false
@@ -340,24 +343,39 @@ local Modules = {
     },
     [2262441883] = {
         CustomPlayerTag = function(Player)
-            return Player:FindFirstChild 'Job' and (' [' .. Player.Job.Value .. ']') or ''
+            local Name = ''
+            local Job = Player:FindFirstChild 'Job'
+
+            if Job then
+                Name = Format('\n[%s]', Job.Value)
+            end
+
+            return Name
         end,
         CustomESP = function()
-            if workspace:FindFirstChild 'MoneyPrinters' then
-                for i, v in pairs(workspace.MoneyPrinters:GetChildren()) do
+            local Entities = workspace:FindFirstChild 'MoneyPrinters'
+
+            if Entities then
+                for i, v in pairs(Entities:GetChildren()) do
+                    local Int = v:FindFirstChild 'Int'
                     local Main = v:FindFirstChild 'Main'
                     local Owner = v:FindFirstChild 'TrueOwner'
-                    local Money = v:FindFirstChild 'Int' and v.Int:FindFirstChild 'Money' or nil
+                    local Money
+
+                    if Int then
+                        Money = Int:FindFirstChild 'Money'
+                    end
+
                     if Main and Owner and Money then
-                        local O = tostring(Owner.Value)
                         local M = tostring(Money.Value)
+                        local O = tostring(Owner.Value)
 
                         pcall(
                             RenderList.AddOrUpdateInstance,
                             RenderList,
                             v,
                             Main,
-                            string.format('Money Printer\nOwned by %s\n[%s]', O, M),
+                            Format('[%s]\n[Owned By %s] [$%s]', v.Name, O, M),
                             Color3.fromRGB(255, 185, 100)
                         )
                     end
@@ -367,32 +385,32 @@ local Modules = {
     },
     [4581966615] = {
         CustomESP = function()
-            if workspace:FindFirstChild 'Entities' then
-                for i, v in pairs(workspace.Entities:GetChildren()) do
-                    if not v.Name:match 'Printer' then
-                        continue
-                    end
+            local Entities = workspace:FindFirstChild 'Entities'
 
-                    local Properties = v:FindFirstChild 'Properties'
-                    if not Properties then
-                        continue
-                    end
-                    local Main = v:FindFirstChild 'hitbox'
-                    local Owner = Properties:FindFirstChild 'Owner'
-                    local Money = Properties:FindFirstChild 'CurrentPrinted'
+            if Entities then
+                for i, v in pairs(Entities:GetChildren()) do
+                    if Match(v.Name, 'Printer') then
+                        local Properties = v:FindFirstChild 'Properties'
 
-                    if Main and Owner and Money then
-                        local O = Owner.Value and tostring(Owner.Value) or 'no one'
-                        local M = tostring(Money.Value)
+                        if Properties then
+                            local Main = v:FindFirstChild 'hitbox'
+                            local Owner = Properties:FindFirstChild 'Owner'
+                            local Money = Properties:FindFirstChild 'CurrentPrinted'
 
-                        pcall(
-                            RenderList.AddOrUpdateInstance,
-                            RenderList,
-                            v,
-                            Main,
-                            string.format('Money Printer\nOwned by %s\n[%s]', O, M),
-                            Color3.fromRGB(255, 185, 100)
-                        )
+                            if Main and Owner and Money then
+                                local M = tostring(Money.Value)
+                                local O = Owner.Value and tostring(Owner.Value) or 'No One'
+
+                                pcall(
+                                    RenderList.AddOrUpdateInstance,
+                                    RenderList,
+                                    v,
+                                    Main,
+                                    Format('[%s]\n[Owned By %s] [$%s]', v.Name, O, M),
+                                    Color3.fromRGB(255, 185, 100)
+                                )
+                            end
+                        end
                     end
                 end
             end
@@ -411,7 +429,7 @@ local Modules = {
                             RenderList,
                             v,
                             Main,
-                            string.format('[%s] [%s/%s]', v.Name, Hum.Health, Hum.MaxHealth),
+                            Format('[%s] [%s/%s]', v.Name, Hum.Health, Hum.MaxHealth),
                             Color3.fromRGB(255, 185, 100)
                         )
                     end
@@ -451,7 +469,7 @@ local Modules = {
                 local Spree = Stats:FindFirstChild 'Spree'
 
                 if Rank and Spree then
-                    Name = string.format('\n[%s] [Spree: %s]', Rank.Value, Spree.Value)
+                    Name = Format('\n[%s] [Spree: %s]', Rank.Value, Spree.Value)
                 end
             end
 
@@ -469,7 +487,7 @@ local Modules = {
             if Backpack then
                 for i, v in pairs(Backpack:GetChildren()) do
                     if v:IsA 'BackpackItem' then
-                        table.insert(Moves, v)
+                        TInsert(Moves, v)
                     end
                 end
             end
@@ -479,13 +497,13 @@ local Modules = {
                     local Cooldown = v:FindFirstChild 'CD'
 
                     if Cooldown then
-                        table.insert(CDs, string.format('[%s | %s/20]', v.Name, Cooldown.Value))
+                        TInsert(CDs, Format('[%s | %s/20]', v.Name, Cooldown.Value))
                     end
                 end
             end
 
             if #CDs > 0 then
-                Name = Name .. table.concat(CDs, ' ')
+                Name = Name .. TConcat(CDs, ' ')
             end
 
             return Name
@@ -498,19 +516,19 @@ local Modules = {
 
             for i, v in pairs(Players:GetPlayers()) do
                 if v.Character then
-                    table.insert(Player, v.Character)
+                    TInsert(Player, v.Character)
                 end
             end
 
             if Living then
                 for i, v in pairs(Living:GetChildren()) do
-                    if not table.find(Player, v) then
+                    if not TFind(Player, v) then
                         local Main = v:FindFirstChild 'HumanoidRootPart'
                         local Hum = v:FindFirstChild 'Humanoid'
                         local Tag = ''
 
-                        if not string.find(v.Name, 'Trainee') then
-                            Tag = string.gsub(v.Name, '%d+', '')
+                        if not Find(v.Name, 'Trainee') then
+                            Tag = GSub(v.Name, '%d+', '')
                         end
 
                         if Main and Hum then
@@ -519,7 +537,7 @@ local Modules = {
                                 RenderList,
                                 v,
                                 Main,
-                                string.format('[%s] [%s/%s]', Tag, math.floor(Hum.Health), Hum.MaxHealth),
+                                Format('[%s] [%s/%s]', Tag, math.floor(Hum.Health), Hum.MaxHealth),
                                 Color3.fromRGB(255, 185, 100)
                             )
                         end
@@ -535,7 +553,7 @@ local Modules = {
                 local Reiatsu = Character:FindFirstChild 'Reiatsu'
 
                 if Reiatsu then
-                    Name = string.format('\n[%s]', Reiatsu.Value)
+                    Name = Format('\n[%s]', Reiatsu.Value)
                 end
             end
 
@@ -549,19 +567,19 @@ local Modules = {
 
             for i, v in pairs(Players:GetPlayers()) do
                 if v.Character then
-                    table.insert(Player, v.Character)
+                    TInsert(Player, v.Character)
                 end
             end
 
             if Living then
                 for i, v in pairs(Living:GetChildren()) do
-                    if not table.find(Player, v) then
+                    if not TFind(Player, v) then
                         local Main = v:FindFirstChild 'HumanoidRootPart'
                         local Hum = v:FindFirstChild 'Humanoid'
                         local Tag = ''
 
-                        if not string.find(v.Name, 'Trainee') then
-                            Tag = string.gsub(v.Name, '%d+', '')
+                        if not Find(v.Name, 'Trainee') then
+                            Tag = GSub(v.Name, '%d+', '')
                         end
 
                         if Main and Hum then
@@ -570,7 +588,7 @@ local Modules = {
                                 RenderList,
                                 v,
                                 Main,
-                                string.format('[%s] [%s/%s]', Tag, math.floor(Hum.Health), Hum.MaxHealth),
+                                Format('[%s] [%s/%s]', Tag, math.floor(Hum.Health), Hum.MaxHealth),
                                 Color3.fromRGB(255, 185, 100)
                             )
                         end
@@ -586,7 +604,7 @@ local Modules = {
                 local Reiatsu = Character:FindFirstChild 'Reiatsu'
 
                 if Reiatsu then
-                    Name = string.format('\n[%s]', Reiatsu.Value)
+                    Name = Format('\n[%s]', Reiatsu.Value)
                 end
             end
 
@@ -600,13 +618,13 @@ local Modules = {
 
             for i, v in pairs(Players:GetPlayers()) do
                 if v.Character then
-                    table.insert(Player, v.Character)
+                    TInsert(Player, v.Character)
                 end
             end
 
             if Living then
                 for i, v in pairs(Living:GetChildren()) do
-                    if not table.find(Player, v) then
+                    if not TFind(Player, v) then
                         local Main = v:FindFirstChild 'HumanoidRootPart'
                         local Hum = v:FindFirstChild 'Humanoid'
 
@@ -616,7 +634,7 @@ local Modules = {
                                 RenderList,
                                 v,
                                 Main,
-                                string.format('[%s] [%s/%s]', v.Name, math.floor(Hum.Health), Hum.MaxHealth),
+                                Format('[%s] [%s/%s]', v.Name, math.floor(Hum.Health), Hum.MaxHealth),
                                 Color3.fromRGB(255, 185, 100)
                             )
                         end
@@ -633,7 +651,7 @@ local Modules = {
                 local MaxReiatsu = Stats:FindFirstChild 'MaxReiatsu'
 
                 if Reiatsu and MaxReiatsu then
-                    Name = string.format('\n[%s/%s]', Reiatsu.Value, MaxReiatsu.Value)
+                    Name = Format('\n[%s/%s]', Reiatsu.Value, MaxReiatsu.Value)
                 end
             end
 
@@ -647,13 +665,13 @@ local Modules = {
 
             for i, v in pairs(Players:GetPlayers()) do
                 if v.Character then
-                    table.insert(Player, v.Character)
+                    TInsert(Player, v.Character)
                 end
             end
 
             if Living then
                 for i, v in pairs(Living:GetChildren()) do
-                    if not table.find(Player, v) then
+                    if not TFind(Player, v) then
                         local Main = v:FindFirstChild 'HumanoidRootPart'
                         local Hum = v:FindFirstChild 'Humanoid'
 
@@ -663,7 +681,7 @@ local Modules = {
                                 RenderList,
                                 v,
                                 Main,
-                                string.format('[%s] [%s/%s]', v.Name, math.floor(Hum.Health), Hum.MaxHealth),
+                                Format('[%s] [%s/%s]', v.Name, math.floor(Hum.Health), Hum.MaxHealth),
                                 Color3.fromRGB(255, 185, 100)
                             )
                         end
@@ -680,7 +698,7 @@ local Modules = {
                 local MaxReiatsu = Stats:FindFirstChild 'MaxReiatsu'
 
                 if Reiatsu and MaxReiatsu then
-                    Name = string.format('\n[%s/%s]', Reiatsu.Value, MaxReiatsu.Value)
+                    Name = Format('\n[%s/%s]', Reiatsu.Value, MaxReiatsu.Value)
                 end
             end
 
@@ -703,14 +721,14 @@ local Modules = {
                     Name = FirstName.Value
 
                     if LastName then
-                        Name = string.gsub(string.format('%s %s', FirstName.Value, LastName.Value), '%s+$', '')
+                        Name = GSub(Format('%s %s', FirstName.Value, LastName.Value), '%s+$', '')
                     end
 
-                    if string.find(Name, utf8.char(8217)) then
-                        Name = string.gsub(Name, utf8.char(8217), '\'')
+                    if Find(Name, utf8.char(8217)) then
+                        Name = GSub(Name, utf8.char(8217), '\'')
                     end
 
-                    Name = string.format('\n[%s]', Name)
+                    Name = Format('\n[%s]', Name)
                 end
 
                 if not IsStringEmpty(Name) then
@@ -723,27 +741,27 @@ local Modules = {
 
                     if Race then
                         if not IsStringEmpty(Race.Value) then
-                            table.insert(Specs, Race.Value)
+                            TInsert(Specs, Race.Value)
                         end
                     end
                     if Class then
                         if not IsStringEmpty(Class.Value) then
-                            table.insert(Specs, Class.Value)
+                            TInsert(Specs, Class.Value)
                         end
                     end
                     if Faction then
                         if not IsStringEmpty(Faction.Value) then
-                            table.insert(Specs, Faction.Value)
+                            TInsert(Specs, Faction.Value)
                         end
                     end
 
                     if Planet then
                         if not IsStringEmpty(Planet.Value) then
-                            table.insert(Place, Planet.Value)
+                            TInsert(Place, Planet.Value)
 
                             if Area then
                                 if not IsStringEmpty(Area.Value) then
-                                    table.insert(Place, Area.Value)
+                                    TInsert(Place, Area.Value)
                                 end
                             end
                         end
@@ -752,11 +770,11 @@ local Modules = {
             end
 
             if #Specs > 0 then
-                Name = Name .. string.format('\n[%s]', table.concat(Specs, '-'))
+                Name = Name .. Format('\n[%s]', TConcat(Specs, '-'))
             end
 
             if #Place > 0 then
-                Name = Name .. string.format(' [%s]', table.concat(Place, '-'))
+                Name = Name .. Format(' [%s]', TConcat(Place, '-'))
             end
 
             return Name
@@ -800,60 +818,60 @@ local Modules = {
 
                 if Character then
                     if Character and Character:FindFirstChild 'Danger' then
-                        table.insert(Extra, 'D')
+                        TInsert(Extra, 'D')
                     end
                     if Character:FindFirstChild 'ManaAbilities' and Character.ManaAbilities:FindFirstChild 'ManaSprint' then
-                        table.insert(Extra, 'D1')
+                        TInsert(Extra, 'D1')
                     end
 
                     if Character:FindFirstChild 'Mana' then
-                        table.insert(Extra, 'M' .. math.floor(Character.Mana.Value))
+                        TInsert(Extra, 'M' .. math.floor(Character.Mana.Value))
                     end
                     if Character:FindFirstChild 'Vampirism' then
-                        table.insert(Extra, 'V')
+                        TInsert(Extra, 'V')
                     end
                     if Character:FindFirstChild 'Observe' then
-                        table.insert(Extra, 'ILL')
+                        TInsert(Extra, 'ILL')
                     end
                     if Character:FindFirstChild 'Inferi' then
-                        table.insert(Extra, 'NEC')
+                        TInsert(Extra, 'NEC')
                     end
                     if Character:FindFirstChild 'World\'s Pulse' then
-                        table.insert(Extra, 'DZIN')
+                        TInsert(Extra, 'DZIN')
                     end
                     if Character:FindFirstChild 'Shift' then
-                        table.insert(Extra, 'MAD')
+                        TInsert(Extra, 'MAD')
                     end
                     if Character:FindFirstChild 'Head' and Character.Head:FindFirstChild 'FacialMarking' then
                         local FM = Character.Head:FindFirstChild 'FacialMarking'
                         if FM.Texture == 'http://www.roblox.com/asset/?id=4072968006' then
-                            table.insert(Extra, 'HEALER')
+                            TInsert(Extra, 'HEALER')
                         elseif FM.Texture == 'http://www.roblox.com/asset/?id=4072914434' then
-                            table.insert(Extra, 'SEER')
+                            TInsert(Extra, 'SEER')
                         elseif FM.Texture == 'http://www.roblox.com/asset/?id=4094417635' then
-                            table.insert(Extra, 'JESTER')
+                            TInsert(Extra, 'JESTER')
                         elseif FM.Texture == 'http://www.roblox.com/asset/?id=4072968656' then
-                            table.insert(Extra, 'BLADE')
+                            TInsert(Extra, 'BLADE')
                         end
                     end
                 end
                 if Player:FindFirstChild 'Backpack' then
                     if Player.Backpack:FindFirstChild 'Observe' then
-                        table.insert(Extra, 'ILL')
+                        TInsert(Extra, 'ILL')
                     end
                     if Player.Backpack:FindFirstChild 'Inferi' then
-                        table.insert(Extra, 'NEC')
+                        TInsert(Extra, 'NEC')
                     end
                     if Player.Backpack:FindFirstChild 'World\'s Pulse' then
-                        table.insert(Extra, 'DZIN')
+                        TInsert(Extra, 'DZIN')
                     end
                     if Player.Backpack:FindFirstChild 'Shift' then
-                        table.insert(Extra, 'MAD')
+                        TInsert(Extra, 'MAD')
                     end
                 end
 
                 if #Extra > 0 then
-                    Name = Name .. ' [' .. table.concat(Extra, '-') .. ']'
+                    Name = Name .. ' [' .. TConcat(Extra, '-') .. ']'
                 end
             end
 
@@ -914,53 +932,53 @@ local Modules = {
 
                 if Character then
                     if Character and Character:FindFirstChild 'Danger' then
-                        table.insert(Extra, 'D')
+                        TInsert(Extra, 'D')
                     end
                     if Character:FindFirstChild 'ManaAbilities' and Character.ManaAbilities:FindFirstChild 'ManaSprint' then
-                        table.insert(Extra, 'D1')
+                        TInsert(Extra, 'D1')
                     end
 
                     if Character:FindFirstChild 'Mana' then
-                        table.insert(Extra, 'M' .. math.floor(Character.Mana.Value))
+                        TInsert(Extra, 'M' .. math.floor(Character.Mana.Value))
                     end
                     if Character:FindFirstChild 'Vampirism' then
-                        table.insert(Extra, 'V')
+                        TInsert(Extra, 'V')
                     end
                     if Character:FindFirstChild 'Observe' then
-                        table.insert(Extra, 'ILL')
+                        TInsert(Extra, 'ILL')
                     end
                     if Character:FindFirstChild 'Inferi' then
-                        table.insert(Extra, 'NEC')
+                        TInsert(Extra, 'NEC')
                     end
 
                     if Character:FindFirstChild 'World\'s Pulse' then
-                        table.insert(Extra, 'DZIN')
+                        TInsert(Extra, 'DZIN')
                     end
                     if Character:FindFirstChild 'Head' and Character.Head:FindFirstChild 'FacialMarking' then
                         local FM = Character.Head:FindFirstChild 'FacialMarking'
                         if FM.Texture == 'http://www.roblox.com/asset/?id=4072968006' then
-                            table.insert(Extra, 'HEALER')
+                            TInsert(Extra, 'HEALER')
                         elseif FM.Texture == 'http://www.roblox.com/asset/?id=4072914434' then
-                            table.insert(Extra, 'SEER')
+                            TInsert(Extra, 'SEER')
                         elseif FM.Texture == 'http://www.roblox.com/asset/?id=4094417635' then
-                            table.insert(Extra, 'JESTER')
+                            TInsert(Extra, 'JESTER')
                         end
                     end
                 end
                 if Player:FindFirstChild 'Backpack' then
                     if Player.Backpack:FindFirstChild 'Observe' then
-                        table.insert(Extra, 'ILL')
+                        TInsert(Extra, 'ILL')
                     end
                     if Player.Backpack:FindFirstChild 'Inferi' then
-                        table.insert(Extra, 'NEC')
+                        TInsert(Extra, 'NEC')
                     end
                     if Player.Backpack:FindFirstChild 'World\'s Pulse' then
-                        table.insert(Extra, 'DZIN')
+                        TInsert(Extra, 'DZIN')
                     end
                 end
 
                 if #Extra > 0 then
-                    Name = Name .. ' [' .. table.concat(Extra, '-') .. ']'
+                    Name = Name .. ' [' .. TConcat(Extra, '-') .. ']'
                 end
             end
 
@@ -980,7 +998,7 @@ local Modules = {
                 local FullName = Data:FindFirstChild 'oName'
 
                 if FullName then
-                    Name = string.format('\n[%s]', string.gsub(FullName.Value, '%s+$', ''))
+                    Name = Format('\n[%s]', GSub(FullName.Value, '%s+$', ''))
                 end
 
                 if not IsStringEmpty(Name) then
@@ -989,29 +1007,29 @@ local Modules = {
                     local Artifact = Data:FindFirstChild 'Artifact'
 
                     if Race then
-                        table.insert(Specs, Race.Value)
+                        TInsert(Specs, Race.Value)
                     end
                     if Class then
-                        table.insert(Specs, Class.Value)
+                        TInsert(Specs, Class.Value)
                     end
                     if Artifact then
                         if Artifact.Value ~= 'N/A' then
-                            table.insert(Specs, Artifact.Value)
+                            TInsert(Specs, Artifact.Value)
                         end
                     end
 
                     if Location then
-                        table.insert(Place, Location.Value)
+                        TInsert(Place, Location.Value)
                     end
                 end
             end
 
             if #Specs > 0 then
-                Name = Name .. string.format('\n[%s]', table.concat(Specs, '-'))
+                Name = Name .. Format('\n[%s]', TConcat(Specs, '-'))
             end
 
             if #Place > 0 then
-                Name = Name .. string.format(' [%s]', table.concat(Place, '-'))
+                Name = Name .. Format(' [%s]', TConcat(Place, '-'))
             end
 
             return Name
@@ -1030,19 +1048,20 @@ local Modules = {
             CharacterName = Player:GetAttribute 'CharacterName'
 
             if not IsStringEmpty(CharacterName) then
-                Name = ('\n[%s]'):format(CharacterName)
+                Name = Format('\n[%s]', CharacterName)
                 local Character = GetCharacter(Player)
                 local Extra = {}
 
                 if Character then
-                    local Blood, Armor = Character:FindFirstChild('Blood'), Character:FindFirstChild('Armor')
+                    local Blood = Character:FindFirstChild 'Blood'
+                    local Armor = Character:FindFirstChild 'Armor'
 
                     if Blood and Blood.ClassName == 'DoubleConstrainedValue' then
-                        table.insert(Extra, ('B%d'):format(Blood.Value))
+                        TInsert(Extra, Format('B%d', Blood.Value))
                     end
 
                     if Armor and Armor.ClassName == 'DoubleConstrainedValue' then
-                        table.insert(Extra, ('A%d'):format(math.floor(Armor.Value / 10)))
+                        TInsert(Extra, Format('A%d', math.floor(Armor.Value / 10)))
                     end
                 end
 
@@ -1050,14 +1069,14 @@ local Modules = {
 
                 for index = 1, #BackpackChildren do
                     local Oath = BackpackChildren[index]
-                    if Oath.ClassName == 'Folder' and Oath.Name:find('Talent:Oath') then
-                        local OathName = Oath.Name:gsub('Talent:Oath: ', '')
-                        table.insert(Extra, OathName)
+                    if Oath.ClassName == 'Folder' and Find(Oath.Name, 'Talent:Oath') then
+                        local OathName = GSub(Oath.Name, 'Talent:Oath ', '')
+                        TInsert(Extra, OathName)
                     end
                 end
 
                 if #Extra > 0 then
-                    Name = Name .. ' [' .. table.concat(Extra, '-') .. ']'
+                    Name = Name .. ' [' .. TConcat(Extra, '-') .. ']'
                 end
             end
 
@@ -1070,19 +1089,20 @@ local Modules = {
             CharacterName = Player:GetAttribute 'CharacterName'
 
             if not IsStringEmpty(CharacterName) then
-                Name = ('\n[%s]'):format(CharacterName)
+                Name = Format('\n[%s]', CharacterName)
                 local Character = GetCharacter(Player)
                 local Extra = {}
 
                 if Character then
-                    local Blood, Armor = Character:FindFirstChild('Blood'), Character:FindFirstChild('Armor')
+                    local Blood = Character:FindFirstChild 'Blood'
+                    local Armor = Character:FindFirstChild 'Armor'
 
                     if Blood and Blood.ClassName == 'DoubleConstrainedValue' then
-                        table.insert(Extra, ('B%d'):format(Blood.Value))
+                        TInsert(Extra, Format('B%d', Blood.Value))
                     end
 
                     if Armor and Armor.ClassName == 'DoubleConstrainedValue' then
-                        table.insert(Extra, ('A%d'):format(math.floor(Armor.Value / 10)))
+                        TInsert(Extra, Format('A%d', math.floor(Armor.Value / 10)))
                     end
                 end
 
@@ -1090,14 +1110,14 @@ local Modules = {
 
                 for index = 1, #BackpackChildren do
                     local Oath = BackpackChildren[index]
-                    if Oath.ClassName == 'Folder' and Oath.Name:find('Talent:Oath') then
-                        local OathName = Oath.Name:gsub('Talent:Oath: ', '')
-                        table.insert(Extra, OathName)
+                    if Oath.ClassName == 'Folder' and Find(Oath.Name, 'Talent:Oath') then
+                        local OathName = GSub(Oath.Name, 'Talent:Oath ', '')
+                        TInsert(Extra, OathName)
                     end
                 end
 
                 if #Extra > 0 then
-                    Name = Name .. ' [' .. table.concat(Extra, '-') .. ']'
+                    Name = Name .. ' [' .. TConcat(Extra, '-') .. ']'
                 end
             end
 
@@ -1120,18 +1140,18 @@ function GetCharacter(Player)
     return Player.Character or (CustomCharacter and CustomCharacter(Player))
 end
 
-function GetMouseLocation()
+local function GetMouseLocation()
     return UserInputService:GetMouseLocation()
 end
 
-function MouseHoveringOver(Values)
+local function MouseHoveringOver(Values)
     local X1, Y1, X2, Y2 = Values[1], Values[2], Values[3], Values[4]
     local MLocation = GetMouseLocation()
     return (MLocation.X >= X1 and MLocation.X <= (X1 + (X2 - X1))) and
         (MLocation.Y >= Y1 and MLocation.Y <= (Y1 + (Y2 - Y1)))
 end
 
-function GetTableData(t)
+local function GetTableData(t)
     if typeof(t) ~= 'table' then
         return
     end
@@ -1150,14 +1170,12 @@ function GetTableData(t)
         }
     )
 end
-local function Format(format, ...)
-    return string.format(format, ...)
-end
-function CalculateValue(Min, Max, Percent)
+
+local function CalculateValue(Min, Max, Percent)
     return Min + math.floor(((Max - Min) * Percent) + .5)
 end
 
-function NewDrawing(InstanceName)
+local function NewDrawing(InstanceName)
     local Instance = Drawing.new(InstanceName)
     return (function(Properties)
         for i, v in pairs(Properties) do
@@ -1183,6 +1201,7 @@ function Menu:AddMenuInstance(Name, DrawingType, Properties)
 
     return Instance
 end
+
 function Menu:UpdateMenuInstance(Name)
     local Instance = shared.MenuDrawingData.Instances[Name]
     if Instance ~= nil then
@@ -1194,6 +1213,7 @@ function Menu:UpdateMenuInstance(Name)
         end)
     end
 end
+
 function Menu:GetInstance(Name)
     return shared.MenuDrawingData.Instances[Name]
 end
@@ -1237,7 +1257,7 @@ local Options =
                                 end
                                 t.Value = force and v or BindedKey
                                 if BT and t.BasePosition and t.BaseSize then
-                                    BT.Text = tostring(t.Value):match '%w+%.%w+%.(.+)'
+                                    BT.Text = Match(tostring(t.Value), '%w+%.%w+%.(.+)')
                                     BT.Position = t.BasePosition + V2New(t.BaseSize.X - BT.TextBounds.X - 20, -10)
                                 end
                             else
@@ -1269,7 +1289,7 @@ local Options =
     }
 )
 
-function Load()
+local function Load()
     local _, Result = pcall(readfile, OptionsFile)
 
     if _ then
@@ -1286,10 +1306,10 @@ function Load()
             end
 
             if Table.TeamColor then
-                TeamColor = Color3.new(Table.TeamColor.R, Table.TeamColor.G, Table.TeamColor.B)
+                TeamColor = C3New(Table.TeamColor.R, Table.TeamColor.G, Table.TeamColor.B)
             end
             if Table.EnemyColor then
-                EnemyColor = Color3.new(Table.EnemyColor.R, Table.EnemyColor.G, Table.EnemyColor.B)
+                EnemyColor = C3New(Table.EnemyColor.R, Table.EnemyColor.G, Table.EnemyColor.B)
             end
 
             if typeof(Table.MenuKey) == 'string' then
@@ -1325,12 +1345,8 @@ Options('MenuKey', 'Menu Key', Enum.KeyCode.F4, 1)
 Options('ToggleKey', 'Toggle Key', Enum.KeyCode.F3, 1)
 Options(
     'ChangeColors',
-    SENTINEL_LOADED and 'Sentinel Unsupported' or 'Change Colors',
+    'Change Colors',
     function()
-        if SENTINEL_LOADED then
-            return
-        end
-
         SubMenu:Show(
             GetMouseLocation(),
             'Unnamed Colors',
@@ -1387,8 +1403,8 @@ Options(
                     Type = 'Button',
                     Text = 'Reset Colors',
                     Function = function()
-                        EnemyColor = Color3.new(1, 0, 0)
-                        TeamColor = Color3.new(0, 1, 0)
+                        EnemyColor = C3New(1, 0, 0)
+                        TeamColor = C3New(0, 1, 0)
 
                         local C1 = Menu:GetInstance 'Sub-ColorPreview.1'
                         if C1 then
@@ -1567,18 +1583,18 @@ function LineBox:Create(Properties)
                 local CF, Size = v.CFrame, v.Size
 
                 local Corners = {
-                    Vector3.new(CF.X + Size.X / 2, CF.Y + Size.Y / 2, CF.Z + Size.Z / 2),
-                    Vector3.new(CF.X - Size.X / 2, CF.Y + Size.Y / 2, CF.Z + Size.Z / 2),
-                    Vector3.new(CF.X - Size.X / 2, CF.Y - Size.Y / 2, CF.Z - Size.Z / 2),
-                    Vector3.new(CF.X + Size.X / 2, CF.Y - Size.Y / 2, CF.Z - Size.Z / 2),
-                    Vector3.new(CF.X - Size.X / 2, CF.Y + Size.Y / 2, CF.Z - Size.Z / 2),
-                    Vector3.new(CF.X + Size.X / 2, CF.Y + Size.Y / 2, CF.Z - Size.Z / 2),
-                    Vector3.new(CF.X - Size.X / 2, CF.Y - Size.Y / 2, CF.Z + Size.Z / 2),
-                    Vector3.new(CF.X + Size.X / 2, CF.Y - Size.Y / 2, CF.Z + Size.Z / 2)
+                    V3New(CF.X + Size.X / 2, CF.Y + Size.Y / 2, CF.Z + Size.Z / 2),
+                    V3New(CF.X - Size.X / 2, CF.Y + Size.Y / 2, CF.Z + Size.Z / 2),
+                    V3New(CF.X - Size.X / 2, CF.Y - Size.Y / 2, CF.Z - Size.Z / 2),
+                    V3New(CF.X + Size.X / 2, CF.Y - Size.Y / 2, CF.Z - Size.Z / 2),
+                    V3New(CF.X - Size.X / 2, CF.Y + Size.Y / 2, CF.Z - Size.Z / 2),
+                    V3New(CF.X + Size.X / 2, CF.Y + Size.Y / 2, CF.Z - Size.Z / 2),
+                    V3New(CF.X - Size.X / 2, CF.Y - Size.Y / 2, CF.Z + Size.Z / 2),
+                    V3New(CF.X + Size.X / 2, CF.Y - Size.Y / 2, CF.Z + Size.Z / 2)
                 }
 
                 for i, v in pairs(Corners) do
-                    table.insert(AllCorners, v)
+                    TInsert(AllCorners, v)
                 end
             end
 
@@ -1620,16 +1636,16 @@ function LineBox:Create(Properties)
             Square.Size = V2New(xSize, ySize)
             Outline.Position = Square.Position
             Outline.Size = Square.Size
-            Outline.Color = Color3.new(0.12, 0.12, 0.12)
+            Outline.Color = C3New(0.12, 0.12, 0.12)
             Outline.Transparency = 0.75
 
             return
         end
 
-        local TLPos, Visible1 = WorldToViewport((CF * CFrame.new(Size.X, Size.Y, 0)).Position)
-        local TRPos, Visible2 = WorldToViewport((CF * CFrame.new(-Size.X, Size.Y, 0)).Position)
-        local BLPos, Visible3 = WorldToViewport((CF * CFrame.new(Size.X, -Size.Y, 0)).Position)
-        local BRPos, Visible4 = WorldToViewport((CF * CFrame.new(-Size.X, -Size.Y, 0)).Position)
+        local TLPos, Visible1 = WorldToViewport((CF * CFNew(Size.X, Size.Y, 0)).Position)
+        local TRPos, Visible2 = WorldToViewport((CF * CFNew(-Size.X, Size.Y, 0)).Position)
+        local BLPos, Visible3 = WorldToViewport((CF * CFNew(Size.X, -Size.Y, 0)).Position)
+        local BRPos, Visible4 = WorldToViewport((CF * CFNew(-Size.X, -Size.Y, 0)).Position)
 
         local Quad = Box['Quad']
 
@@ -1724,22 +1740,22 @@ function LineBox:Create(Properties)
 end
 
 local Colors = {
-    White = FromHex 'ffffff',
+    White = Color3.fromHex('FFFFFF'),
     Primary = {
-        Main = FromHex '424242',
-        Light = FromHex '6d6d6d',
-        Dark = FromHex '1b1b1b'
+        Main = Color3.fromHex('424242'),
+        Light = Color3.fromHex('6D6D6D'),
+        Dark = Color3.fromHex('1B1B1B')
     },
     Secondary = {
-        Main = FromHex 'e0e0e0',
-        Light = FromHex 'ffffff',
-        Dark = FromHex 'aeaeae'
+        Main = Color3.fromHex('E0E0E0'),
+        Light = Color3.fromHex('FFFFFF'),
+        Dark = Color3.fromHex('AEAEAE')
     }
 }
 
 function Connections:Listen(Connection, Function)
     local NewConnection = Connection:Connect(Function)
-    table.insert(self.Active, NewConnection)
+    TInsert(self.Active, NewConnection)
     return NewConnection
 end
 
@@ -1785,10 +1801,6 @@ function Signal:Disconnect()
     end
 end
 
-local function GetMouseLocation()
-    return UserInputService:GetMouseLocation()
-end
-
 local function IsMouseOverDrawing(Drawing, MousePosition)
     local TopLeft = Drawing.Position
     local BottomRight = Drawing.Position + Drawing.Size
@@ -1823,7 +1835,7 @@ local function CreateDrawingsTable()
         local Object = rawget(self.__Objects, Index)
 
         if not Object or (IsSynapse and not Object.__SELF.__OBJECT_EXISTS) then
-            local Type = Index:sub(1, Index:find '-' - 1)
+            local Type = Sub(Index, 1, (Find(Index, '-') - 1))
 
             local Success, Object = pcall(Drawing.new, Type)
 
@@ -1896,7 +1908,7 @@ local function CreateDrawingsTable()
                     Object.Font = Drawing.Fonts.Monospace
                 end
                 Object.Size = 20
-                Object.Color = Color3.new(1, 1, 1)
+                Object.Color = C3New(1, 1, 1)
                 Object.Center = true
                 Object.Outline = true
             elseif Type == 'Square' or Type == 'Rectangle' then
@@ -1936,7 +1948,7 @@ function ColorPicker.new(Position, Size, Color)
     ColorPicker.LastGenerated = tick()
     ColorPicker.Loading = true
 
-    local Picker = {Color = Color or Color3.new(1, 1, 1), HSV = {H = 0, S = 1, V = 1}}
+    local Picker = {Color = Color or C3New(1, 1, 1), HSV = {H = 0, S = 1, V = 1}}
     local Drawings = CreateDrawingsTable()
     local Position = Position or V2New()
     local Size = Size or 150
@@ -1959,7 +1971,7 @@ function ColorPicker.new(Position, Size, Color)
         Filled = true,
         Thickness = 0,
         NumSides = 20,
-        Color = Color3.new(1, 0, 0)
+        Color = C3New(1, 0, 0)
     }
     local Main =
         Drawings['Image-Main'] {
@@ -1971,7 +1983,7 @@ function ColorPicker.new(Position, Size, Color)
         Drawings['Square-Preview'] {
         Position = Main.Position + (Main.Size / 4.5),
         Size = Main.Size / 1.75,
-        Color = Color3.new(1, 0, 0),
+        Color = C3New(1, 0, 0),
         Filled = true,
         Thickness = 0
     }
@@ -1987,7 +1999,7 @@ function ColorPicker.new(Position, Size, Color)
         Radius = 4,
         Thickness = 2,
         Filled = false,
-        Color = Color3.new(0.2, 0.2, 0.2),
+        Color = C3New(0.2, 0.2, 0.2),
         Position = V2New(Main.Position.X + Main.Size.X - 10, Main.Position.Y + (Main.Size.Y / 2))
     }
     local Cursor =
@@ -1995,7 +2007,7 @@ function ColorPicker.new(Position, Size, Color)
         Radius = 3,
         Transparency = 1,
         Filled = true,
-        Color = Color3.new(1, 1, 1),
+        Color = C3New(1, 1, 1),
         Position = CursorOutline.Position
     }
     local CursorOutline =
@@ -2003,14 +2015,14 @@ function ColorPicker.new(Position, Size, Color)
         Radius = 4,
         Thickness = 2,
         Filled = false,
-        Color = Color3.new(0.2, 0.2, 0.2),
+        Color = C3New(0.2, 0.2, 0.2),
         Position = V2New(Preview.Position.X + Preview.Size.X - 2, Preview.Position.Y + 2)
     }
     Drawings['Circle-CursorSquare'] {
         Radius = 3,
         Transparency = 1,
         Filled = true,
-        Color = Color3.new(1, 1, 1),
+        Color = C3New(1, 1, 1),
         Position = CursorOutline.Position
     }
 
@@ -2119,7 +2131,7 @@ function ColorPicker.new(Position, Size, Color)
                 local Cursor =
                     Picker.Drawings['Triangle-Cursor'] {
                     Filled = true,
-                    Color = Color3.new(0.9, 0.9, 0.9),
+                    Color = C3New(0.9, 0.9, 0.9),
                     PointA = MousePosition + V2New(0, 0),
                     PointB = MousePosition + V2New(12, 14),
                     PointC = MousePosition + V2New(0, 18),
@@ -2226,7 +2238,7 @@ function SubMenu:Show(Position, Title, Options)
     if Options then
         for Index, Option in pairs(Options) do
             local function GetName(Name)
-                return ('Sub-%s.%d'):format(Name, Index)
+                return Format('Sub-%s.%d', Name, Index)
             end
             local Position = shared.MenuDrawingData.Instances['Sub-Filling'].Position + V2New(20, Index * 25 - 10)
 
@@ -2309,10 +2321,10 @@ function SubMenu:Hide()
     self.Open = false
 
     for i, v in pairs(shared.MenuDrawingData.Instances) do
-        if i:sub(1, 3) == 'Sub' then
+        if Sub(i, 1, 3) == 'Sub' then
             v.Visible = false
 
-            if i:sub(4, 4) == ':' then
+            if Sub(i, 4, 4) == ':' then
                 v:Remove()
                 shared.MenuDrawingData.Instance[i] = nil
             end
@@ -2339,7 +2351,7 @@ function SubMenu:Hide()
     CurrentColorPicker = nil
 end
 
-function CreateMenu(NewPosition)
+local function CreateMenu(NewPosition)
     MenuLoaded = false
     UIButtons = {}
     Sliders = {}
@@ -2359,7 +2371,7 @@ function CreateMenu(NewPosition)
         'Line',
         {
             Visible = false,
-            Color = Color3.new(0, 1, 0),
+            Color = C3New(0, 1, 0),
             Transparency = 1,
             Thickness = 1
         }
@@ -2369,7 +2381,7 @@ function CreateMenu(NewPosition)
         'Line',
         {
             Visible = false,
-            Color = Color3.new(0, 1, 0),
+            Color = C3New(0, 1, 0),
             Transparency = 1,
             Thickness = 1
         }
@@ -2655,7 +2667,7 @@ function CreateMenu(NewPosition)
                     Format('%s_BindText', v.Name),
                     'Text',
                     {
-                        Text = tostring(v.Value):match '%w+%.%w+%.(.+)',
+                        Text = Match(tostring(v.Value), '%w+%.%w+%.(.+)'),
                         Size = 20,
                         Position = BasePosition,
                         Visible = true,
@@ -2725,7 +2737,7 @@ function CreateMenu(NewPosition)
         'Line',
         {
             Visible = false,
-            Color = Color3.new(1, 0, 0),
+            Color = C3New(1, 0, 0),
             Transparency = 1,
             Thickness = 2
         }
@@ -2735,7 +2747,7 @@ function CreateMenu(NewPosition)
         'Line',
         {
             Visible = false,
-            Color = Color3.new(1, 0, 0),
+            Color = C3New(1, 0, 0),
             Transparency = 1,
             Thickness = 2
         }
@@ -2745,7 +2757,7 @@ function CreateMenu(NewPosition)
         'Line',
         {
             Visible = false,
-            Color = Color3.new(1, 0, 0),
+            Color = C3New(1, 0, 0),
             Transparency = 1,
             Thickness = 2
         }
@@ -3016,7 +3028,7 @@ local function CheckRay(Instance, Distance, Position, Unit)
             Pass = false
 
             if HitInstance.Transparency >= 0.3 or not HitInstance.CanCollide and HitInstance.ClassName ~= 'Terrain' then
-                table.insert(IgnoreList, HitInstance)
+                TInsert(IgnoreList, HitInstance)
                 RaycastList.FilterDescendantsInstances = IgnoreList
             end
         end
@@ -3108,7 +3120,7 @@ local function CheckRelative(Position, Instance)
         local Pos = Instance.PrimaryPart.Position
         local CPos = Camera.CFrame.Position
 
-        Relative = CFrame.new(V3New(Pos.X, CPos.Y, Pos.Z), CPos):PointToObjectSpace(Position)
+        Relative = CFNew(V3New(Pos.X, CPos.Y, Pos.Z), CPos):PointToObjectSpace(Position)
         Vector = V2New(Relative.X, Relative.Z)
     end
 
@@ -3148,7 +3160,7 @@ local function UpdatePlayerData()
                     NewDrawing 'Line' {
                         Transparency = 1,
                         Thickness = 3,
-                        Color = Color3.new(0.1, 0.1, 0.1)
+                        Color = C3New(0.1, 0.1, 0.1)
                     }
                 Data.Instances['Tracer'] =
                     Data.Instances['Tracer'] or
@@ -3255,7 +3267,7 @@ local function UpdatePlayerData()
                             DistanceTag.Visible = true
                             DistanceTag.Size = Options.TextSize.Value - 1
                             DistanceTag.Outline = Options.TextOutline.Value
-                            DistanceTag.Color = Color3.new(1, 1, 1)
+                            DistanceTag.Color = C3New(1, 1, 1)
 
                             local Str = ''
 
@@ -3298,7 +3310,7 @@ local function UpdatePlayerData()
                 NewDrawing 'Line' {
                     Transparency = 1,
                     Thickness = 3,
-                    Color = Color3.new(0.1, 0.1, 0.1)
+                    Color = C3New(0.1, 0.1, 0.1)
                 }
             Data.Instances['Tracer'] =
                 Data.Instances['Tracer'] or
@@ -3422,7 +3434,7 @@ local function UpdatePlayerData()
                         local ScreenPositionUpper =
                             WorldToViewport(
                             (HumanoidRootPart:GetRenderCFrame() *
-                                CFrame.new(0, Head.Size.Y + HumanoidRootPart.Size.Y + (Options.YOffset.Value / 25), 0)).Position
+                                CFNew(0, Head.Size.Y + HumanoidRootPart.Size.Y + (Options.YOffset.Value / 25), 0)).Position
                         )
                         local Scale = Head.Size.Y / 2
 
@@ -3435,7 +3447,7 @@ local function UpdatePlayerData()
                                 V2New(ScreenPositionUpper.X, ScreenPositionUpper.Y) - V2New(0, NameTag.TextBounds.Y)
                             NameTag.Color = Color
                             NameTag.Color = Color
-                            NameTag.OutlineColor = Color3.new(0.05, 0.05, 0.05)
+                            NameTag.OutlineColor = C3New(0.05, 0.05, 0.05)
                             NameTag.Transparency = 0.85
 
                             NameTag.Text = v.Name .. (Options.ShowDisplay.Value and ' [' .. v.DisplayName .. ']' or '')
@@ -3453,7 +3465,7 @@ local function UpdatePlayerData()
                             DistanceTag.Visible = true
                             DistanceTag.Size = Options.TextSize.Value - 1
                             DistanceTag.Outline = Options.TextOutline.Value
-                            DistanceTag.Color = Color3.new(1, 1, 1)
+                            DistanceTag.Color = C3New(1, 1, 1)
                             DistanceTag.Transparency = 0.85
 
                             local Str = ''
@@ -3488,7 +3500,7 @@ local function UpdatePlayerData()
                             end
 
                             DistanceTag.Text = Str
-                            DistanceTag.OutlineColor = Color3.new(0.05, 0.05, 0.05)
+                            DistanceTag.OutlineColor = C3New(0.05, 0.05, 0.05)
                             DistanceTag.Position =
                                 (NameTag.Visible and NameTag.Position + V2New(0, NameTag.TextBounds.Y) or
                                 V2New(ScreenPositionUpper.X, ScreenPositionUpper.Y))
@@ -3496,8 +3508,8 @@ local function UpdatePlayerData()
                             DistanceTag.Visible = false
                         end
                         if Options.ShowDot.Value and Vis then
-                            local Top = WorldToViewport((Head.CFrame * CFrame.new(0, Scale, 0)).Position)
-                            local Bottom = WorldToViewport((Head.CFrame * CFrame.new(0, -Scale, 0)).Position)
+                            local Top = WorldToViewport((Head.CFrame * CFNew(0, Scale, 0)).Position)
+                            local Bottom = WorldToViewport((Head.CFrame * CFNew(0, -Scale, 0)).Position)
                             local Radius = math.abs((Top - Bottom).Y)
 
                             HeadDot.Visible = true
