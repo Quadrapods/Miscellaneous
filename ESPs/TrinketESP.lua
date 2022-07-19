@@ -34,6 +34,8 @@ local Artifacts = {
         'Azael Horns',
         'Scroom Key',
         'Fairfrozen',
+        'Bound Book',
+        'Blood Ring',
         'Rift Gem',
     },
     Sub = {
@@ -65,6 +67,7 @@ local SizeChecks = {
     ['Phoenix Down'] = i(0.444, 0.444, 0.433),
     ['Ice Essence'] = i(0.443721, 0.44358, 0.43335),
     ['Night Stone'] = i(0.443721, 0.44358, 0.43335),
+    ['Bound Book'] = i(1.16806, 0.26593, 1.51),
     ['Scroom Key'] = i(0.600391, 0.200031, 1.40005),
     ['Fairfrozen'] = i(0.8, 0.8, 0.8),
     ['Old Amulet'] = i(0.853258, 0.0740985, 1.14774),
@@ -86,45 +89,37 @@ local SpecialChecks = {
     'Phoenix Down',
     'Night Stone',
     'Ice Essence',
+    'Gem',
 }
 
 local Colors = {
     Color_1 = g(255, 255, 255),
     Color_2 = g(255, 127, 0),
     Color_3 = g(255, 255, 0),
-    Color_4 = g(0, 0, 0),
+    Color_4 = g(255, 0, 0),
+    Color_O = g(0, 0, 0),
 }
 
 local Properties = {
-    Line = {
-        From         = k,
-        Color        = Colors.Color_1,
-        ZIndex       = 3,
-        Thickness    = 1.5,
-        Transparency = 0.5,
-    },
     Text = {
         Size         = 18,
         Font         = Drawing.Fonts.UI,
-        Color        = Colors.Color_1,
         ZIndex       = 1,
         Center       = true,
         Outline      = true,
-        OutlineColor = Colors.Color_4,
-        Transparency = 1,
+        OutlineColor = Colors.Color_O,
+        Transparency = 0.75,
     },
     TSub = {
         Size         = 16,
         Font         = Drawing.Fonts.UI,
-        Color        = Colors.Color_1,
         ZIndex       = 2,
         Center       = true,
         Outline      = true,
-        OutlineColor = Colors.Color_4,
-        Transparency = 1,
+        OutlineColor = Colors.Color_O,
+        Transparency = 0.75,
     },
     Circle = {
-        Color        = Colors.Color_1,
         ZIndex       = 4,
         Radius       = 10,
         Filled       = false,
@@ -167,6 +162,13 @@ local function GetSpecialName(a, b)
                     return ('Azael Horns');
                 end
             end
+        end
+    end
+    if (b == 'Gem') then
+        local c = a:FindFirstChild('FakeFlame');
+
+        if (c) then
+            return ('Blood Ring');
         end
     end
 end
@@ -266,13 +268,11 @@ end
 
 f.DescendantAdded:Connect(function(v)
     d.RenderStepped:Wait()
-    if (TRINKET_ESP_ENABLED) then
-        if (v and v.Parent and v:IsA('ClickDetector')) then
-            local a = v.Parent.Parent;
+    if (v and v.Parent and v:IsA('ClickDetector')) then
+        local a = v.Parent.Parent;
 
-            if (a and a:IsA('BasePart')) then
-                ESP.Add(a);
-            end
+        if (a and a:IsA('BasePart')) then
+            ESP.Add(a);
         end
     end
 end)
