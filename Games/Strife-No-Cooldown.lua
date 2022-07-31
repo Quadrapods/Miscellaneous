@@ -16,7 +16,7 @@ local function GetKeyUpdate()
         for _, v in pairs(debug.getupvalues(x)) do
             if (type(v) == 'table' and table.getn(v) == 4) then
                 z = v;
-                break
+                break;
             end
         end
 
@@ -24,7 +24,7 @@ local function GetKeyUpdate()
             for _, v in pairs(getgc(true)) do
                 if (type(v) == 'table' and v == z) then
                     y = v;
-                    break
+                    break;
                 end
             end
         end
