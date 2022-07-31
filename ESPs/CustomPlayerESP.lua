@@ -29,9 +29,10 @@ local Rainbow = false
 local DragOffset = V2New()
 local DraggingWhat = nil
 local OldData = {}
-local Fonts = {UI = false, System = false, Plex = false, Monospace = false}
+local CustomColor = C3New(1, 0.75, 0.45)
 local EnemyColor = C3New(1, 0, 0)
 local TeamColor = C3New(0, 1, 0)
+local Font = nil
 local MenuLoaded = false
 local TracerPosition = V2New(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y - 135)
 local DragTracerPosition = false
@@ -40,6 +41,8 @@ local IsSynapse = syn
 local Connections = {Active = {}}
 local Signal = {}
 Signal.__index = Signal
+
+local GetMouseLocation = UserInputService.GetMouseLocation
 
 local TInsert = table.insert
 local TConcat = table.concat
@@ -96,25 +99,6 @@ if shared.CurrentColorPicker then
     shared.CurrentColorPicker:Dispose()
 end
 
-local RealPrint, LastPrintTick = print, 0
-local LatestPrints =
-    setmetatable(
-    {},
-    {__index = function(t, i)
-            return rawget(t, i) or 0
-        end}
-)
-
-local function print(...)
-    local Content = table.unpack {...}
-    local print = RealPrint
-
-    if tick() - LatestPrints[Content] > 5 then
-        LatestPrints[Content] = tick()
-        print(Content)
-    end
-end
-
 local function FindFirstChild(Instance, Name)
     if Instance then
         local Children = Instance:GetChildren()
@@ -131,7 +115,7 @@ end
 
 local function IsStringEmpty(String)
     if type(String) == 'string' then
-        return Match(String, '^%s+$') ~= nil or #String == 0 or String == '' or false
+        return Match(String, '^%s*$') ~= nil
     end
 
     return false
@@ -139,10 +123,6 @@ end
 
 local function WorldToViewport(Number)
     return WTVP(Camera, Number)
-end
-
-local function Set(t, i, v)
-    t[i] = v
 end
 
 local Teams = {}
@@ -343,16 +323,6 @@ local Modules = {
         end
     },
     [2262441883] = {
-        CustomPlayerTag = function(Player)
-            local Name = ''
-            local Job = Player:FindFirstChild 'Job'
-
-            if Job then
-                Name = Format('\n[%s]', Job.Value)
-            end
-
-            return Name
-        end,
         CustomESP = function()
             local Entities = Workspace:FindFirstChild 'MoneyPrinters'
 
@@ -377,11 +347,21 @@ local Modules = {
                             v,
                             Main,
                             Format('[%s]\n[Owned By %s] [$%s]', v.Name, O, M),
-                            Color3.fromRGB(255, 185, 100)
+                            CustomColor
                         )
                     end
                 end
             end
+        end,
+        CustomPlayerTag = function(Player)
+            local Name = ''
+            local Job = Player:FindFirstChild 'Job'
+
+            if Job then
+                Name = Format('\n[%s]', Job.Value)
+            end
+
+            return Name
         end
     },
     [4581966615] = {
@@ -408,52 +388,9 @@ local Modules = {
                                     v,
                                     Main,
                                     Format('[%s]\n[Owned By %s] [$%s]', v.Name, O, M),
-                                    Color3.fromRGB(255, 185, 100)
+                                    CustomColor
                                 )
                             end
-                        end
-                    end
-                end
-            end
-        end
-    },
-    [4801598506] = {
-        CustomESP = function()
-            if Workspace:FindFirstChild 'Mobs' and Workspace.Mobs:FindFirstChild 'Forest1' then
-                for i, v in pairs(Workspace.Mobs.Forest1:GetChildren()) do
-                    local Main = v:FindFirstChild 'Head'
-                    local Hum = v:FindFirstChild 'Mob'
-
-                    if Main and Hum then
-                        pcall(
-                            RenderList.AddOrUpdateInstance,
-                            RenderList,
-                            v,
-                            Main,
-                            Format('[%s] [%s/%s]', v.Name, Hum.Health, Hum.MaxHealth),
-                            Color3.fromRGB(255, 185, 100)
-                        )
-                    end
-                end
-            end
-        end
-    },
-    [2555873122] = {
-        CustomESP = function()
-            if Workspace:FindFirstChild 'WoodPlanks' then
-                for i, v in pairs(Workspace:GetChildren()) do
-                    if v.Name == 'WoodPlanks' then
-                        local Main = v:FindFirstChild 'Wood'
-
-                        if Main then
-                            pcall(
-                                RenderList.AddOrUpdateInstance,
-                                RenderList,
-                                v,
-                                Main,
-                                'Wood Planks',
-                                Color3.fromRGB(255, 185, 100)
-                            )
                         end
                     end
                 end
@@ -539,7 +476,7 @@ local Modules = {
                                 v,
                                 Main,
                                 Format('[%s] [%s/%s]', Tag, math.floor(Hum.Health), Hum.MaxHealth),
-                                Color3.fromRGB(255, 185, 100)
+                                CustomColor
                             )
                         end
                     end
@@ -590,7 +527,7 @@ local Modules = {
                                 v,
                                 Main,
                                 Format('[%s] [%s/%s]', Tag, math.floor(Hum.Health), Hum.MaxHealth),
-                                Color3.fromRGB(255, 185, 100)
+                                CustomColor
                             )
                         end
                     end
@@ -636,7 +573,7 @@ local Modules = {
                                 v,
                                 Main,
                                 Format('[%s] [%s/%s]', v.Name, math.floor(Hum.Health), Hum.MaxHealth),
-                                Color3.fromRGB(255, 185, 100)
+                                CustomColor
                             )
                         end
                     end
@@ -683,7 +620,7 @@ local Modules = {
                                 v,
                                 Main,
                                 Format('[%s] [%s/%s]', v.Name, math.floor(Hum.Health), Hum.MaxHealth),
-                                Color3.fromRGB(255, 185, 100)
+                                CustomColor
                             )
                         end
                     end
@@ -790,7 +727,7 @@ local Modules = {
             local Name = ''
             local FirstName = Player:GetAttribute 'FirstName'
 
-            if typeof(FirstName) == 'string' and #FirstName > 0 then
+            if type(FirstName) == 'string' and #FirstName > 0 then
                 local Prefix = ''
                 local Extra = {}
                 Name = Name .. '\n['
@@ -1141,19 +1078,15 @@ function GetCharacter(Player)
     return Player.Character or (CustomCharacter and CustomCharacter(Player))
 end
 
-local function GetMouseLocation()
-    return UserInputService:GetMouseLocation()
-end
-
 local function MouseHoveringOver(Values)
     local X1, Y1, X2, Y2 = Values[1], Values[2], Values[3], Values[4]
-    local MLocation = GetMouseLocation()
+    local MLocation = GetMouseLocation(UserInputService)
     return (MLocation.X >= X1 and MLocation.X <= (X1 + (X2 - X1))) and
         (MLocation.Y >= Y1 and MLocation.Y <= (Y1 + (Y2 - Y1)))
 end
 
 local function GetTableData(t)
-    if typeof(t) ~= 'table' then
+    if type(t) ~= 'table' then
         return
     end
 
@@ -1161,11 +1094,11 @@ local function GetTableData(t)
         t,
         {
             __call = function(t, func)
-                if typeof(func) ~= 'function' then
+                if type(func) ~= 'function' then
                     return
                 end
                 for i, v in pairs(t) do
-                    pcall(func, i, v)
+                    func(i, v)
                 end
             end
         }
@@ -1180,7 +1113,7 @@ local function NewDrawing(InstanceName)
     local Instance = Drawing.new(InstanceName)
     return (function(Properties)
         for i, v in pairs(Properties) do
-            pcall(Set, Instance, i, v)
+            Instance[i] = v
         end
         return Instance
     end)
@@ -1192,7 +1125,7 @@ function Menu:AddMenuInstance(Name, DrawingType, Properties)
     if shared.MenuDrawingData.Instances[Name] ~= nil then
         Instance = shared.MenuDrawingData.Instances[Name]
         for i, v in pairs(Properties) do
-            pcall(Set, Instance, i, v)
+            Instance[i] = v
         end
     else
         Instance = NewDrawing(DrawingType)(Properties)
@@ -1208,7 +1141,7 @@ function Menu:UpdateMenuInstance(Name)
     if Instance ~= nil then
         return (function(Properties)
             for i, v in pairs(Properties) do
-                pcall(Set, Instance, i, v)
+                Instance[i] = v
             end
             return Instance
         end)
@@ -1243,7 +1176,7 @@ local Options =
                         __call = function(t, v, force)
                             local self = t
 
-                            if typeof(t.Value) == 'function' then
+                            if type(t.Value) == 'function' then
                                 t.Value()
                             elseif typeof(t.Value) == 'EnumItem' then
                                 local BT = Menu:GetInstance(Format('%s_BindText', t.Name))
@@ -1269,7 +1202,7 @@ local Options =
                                 rawset(t, 'Value', NewValue)
 
                                 if Arguments[2] ~= nil and Menu:GetInstance 'TopBar'.Visible then
-                                    if typeof(Arguments[3]) == 'number' then
+                                    if type(Arguments[3]) == 'number' then
                                         local AMT = Menu:GetInstance(Format('%s_AmountText', t.Name))
                                         if AMT then
                                             AMT.Text = tostring(t.Value)
@@ -1295,11 +1228,11 @@ local function Load()
 
     if _ then
         local _, Table = pcall(HttpService.JSONDecode, HttpService, Result)
-        if _ and typeof(Table) == 'table' then
+        if _ and type(Table) == 'table' then
             for i, v in pairs(Table) do
                 if
-                    typeof(Options[i]) == 'table' and Options[i].Value ~= nil and
-                        (typeof(Options[i].Value) == 'boolean' or typeof(Options[i].Value) == 'number')
+                    type(Options[i]) == 'table' and Options[i].Value ~= nil and
+                        (type(Options[i].Value) == 'boolean' or type(Options[i].Value) == 'number')
                  then
                     Options[i].Value = v.Value
                     pcall(Options[i], v.Value)
@@ -1312,11 +1245,14 @@ local function Load()
             if Table.EnemyColor then
                 EnemyColor = C3New(Table.EnemyColor.R, Table.EnemyColor.G, Table.EnemyColor.B)
             end
+            if Table.CustomColor then
+                CustomColor = C3New(Table.CustomColor.R, Table.CustomColor.G, Table.CustomColor.B)
+            end
 
-            if typeof(Table.MenuKey) == 'string' then
+            if type(Table.MenuKey) == 'string' then
                 Options.MenuKey(Enum.KeyCode[Table.MenuKey], true)
             end
-            if typeof(Table.ToggleKey) == 'string' then
+            if type(Table.ToggleKey) == 'string' then
                 Options.ToggleKey(Enum.KeyCode[Table.ToggleKey], true)
             end
         end
@@ -1349,7 +1285,8 @@ Options(
     'Change Colors',
     function()
         SubMenu:Show(
-            GetMouseLocation(),
+            GetMouseLocation(UserInputService),
+            V2New(200, 165),
             'Unnamed Colors',
             {
                 {
@@ -1401,6 +1338,30 @@ Options(
                     end
                 },
                 {
+                    Type = 'Color',
+                    Text = 'Custom Color',
+                    Color = CustomColor,
+                    Function = function(Circ, Position)
+                        if tick() - ColorPicker.LastGenerated < 1 then
+                            return
+                        end
+
+                        if shared.CurrentColorPicker then
+                            shared.CurrentColorPicker:Dispose()
+                        end
+                        local ColorPicker = ColorPicker.new(Position - V2New(-10, 50))
+                        CurrentColorPicker = ColorPicker
+                        shared.CurrentColorPicker = CurrentColorPicker
+                        ColorPicker.ColorChanged:Connect(
+                            function(Color)
+                                Circ.Color = Color
+                                CustomColor = Color
+                                Options.CustomColor = Color
+                            end
+                        )
+                    end
+                },
+                {
                     Type = 'Button',
                     Text = 'Reset Colors',
                     Function = function()
@@ -1434,47 +1395,36 @@ Options(
     'Change Fonts',
     function()
         SubMenu:Show(
-            GetMouseLocation(),
+            GetMouseLocation(UserInputService),
+            V2New(200, 140),
             'Unnamed Fonts',
             {
                 {
                     Type = 'Button',
                     Text = 'UI',
                     Function = function()
-                        for i, v in pairs(Fonts) do
-                            Fonts[i] = false
-                        end
-                        Fonts.UI = true
+                        Font = 0
                     end
                 },
                 {
                     Type = 'Button',
                     Text = 'System',
                     Function = function()
-                        for i, v in pairs(Fonts) do
-                            Fonts[i] = false
-                        end
-                        Fonts.System = true
+                        Font = 1
                     end
                 },
                 {
                     Type = 'Button',
                     Text = 'Plex',
                     Function = function()
-                        for i, v in pairs(Fonts) do
-                            Fonts[i] = false
-                        end
-                        Fonts.Plex = true
+                        Font = 2
                     end
                 },
                 {
                     Type = 'Button',
                     Text = 'Monospace',
                     Function = function()
-                        for i, v in pairs(Fonts) do
-                            Fonts[i] = false
-                        end
-                        Fonts.Monospace = true
+                        Font = 3
                     end
                 }
             }
@@ -1489,7 +1439,7 @@ Options(
         for i, v in pairs(Options) do
             if
                 Options[i] ~= nil and Options[i].Value ~= nil and Options[i].Text ~= nil and
-                    (typeof(Options[i].Value) == 'boolean' or typeof(Options[i].Value) == 'number' or
+                    (type(Options[i].Value) == 'boolean' or type(Options[i].Value) == 'number' or
                         typeof(Options[i].Value) == 'EnumItem')
              then
                 Options[i](Options[i].DefaultValue, true)
@@ -1515,6 +1465,9 @@ Options(
         if typeof(EnemyColor) == 'Color3' then
             COptions.EnemyColor = {R = EnemyColor.R, G = EnemyColor.G, B = EnemyColor.B}
         end
+        if typeof(CustomColor) == 'Color3' then
+            COptions.CustomColor = {R = CustomColor.R, G = CustomColor.G, B = CustomColor.B}
+        end
 
         if typeof(COptions.MenuKey.Value) == 'EnumItem' then
             COptions.MenuKey = COptions.MenuKey.Value.Name
@@ -1535,7 +1488,7 @@ Options('MenuOpen', nil, true)
 local function Combine(...)
     local Output = {}
     for i, v in pairs {...} do
-        if typeof(v) == 'table' then
+        if type(v) == 'table' then
             table.foreach(
                 v,
                 function(i, v)
@@ -1560,9 +1513,10 @@ function LineBox:Create(Properties)
         Properties
     )
 
+    Box['OutlineSquare'] = NewDrawing 'Square'(Properties)
+    Box['Square'] = NewDrawing 'Square'(Properties)
+
     if QUAD_SUPPORTED_EXPLOIT then
-        Box['OutlineSquare'] = NewDrawing 'Square'(Properties)
-        Box['Square'] = NewDrawing 'Square'(Properties)
         Box['Quad'] = NewDrawing 'Quad'(Properties)
     else
         Box['TopLeft'] = NewDrawing 'Line'(Properties)
@@ -1571,18 +1525,39 @@ function LineBox:Create(Properties)
         Box['BottomRight'] = NewDrawing 'Line'(Properties)
     end
 
+    local TL = Box['TopLeft']
+    local TR = Box['TopRight']
+    local BL = Box['BottomLeft']
+    local BR = Box['BottomRight']
+
+    local Quad = Box['Quad']
+    local Square = Box['Square']
+    local Outline = Box['OutlineSquare']
+
     function Box:Update(CF, Size, Color, Properties, Parts)
         if not CF or not Size then
             return
         end
 
-        if Options.Show2DBox.Value and typeof(Parts) == 'table' then
+        if Options.Show2DBox.Value and type(Parts) == 'table' then
             local AllCorners = {}
 
+            if Quad then
+                if Quad.Visible then
+                    Quad.Visible = false
+                end
+            end
+            if TL and TR and BL and BR then
+                if TL.Visible or TR.Visible or BL.Visible or BR.Visible then
+                    TL.Visible = false
+                    TR.Visible = false
+                    BL.Visible = false
+                    BR.Visible = false
+                end
+            end
+
             for i, v in pairs(Parts) do
-
                 local CF, Size = v.CFrame, v.Size
-
                 local Corners = {
                     V3New(CF.X + Size.X / 2, CF.Y + Size.Y / 2, CF.Z + Size.Z / 2),
                     V3New(CF.X - Size.X / 2, CF.Y + Size.Y / 2, CF.Z + Size.Z / 2),
@@ -1627,28 +1602,32 @@ function LineBox:Create(Properties)
 
             local xSize, ySize = xMax - xMin, yMax - yMin
 
-            local Outline = Box['OutlineSquare']
-            local Square = Box['Square']
-            Outline.Visible = Vs
             Square.Visible = Vs
-            Square.Position = V2New(xMin, yMin)
             Square.Color = Color
-            Square.Thickness = math.floor(Outline.Thickness * 0.3)
+            Square.Thickness = 1
+            Square.Position = V2New(xMin, yMin)
             Square.Size = V2New(xSize, ySize)
-            Outline.Position = Square.Position
-            Outline.Size = Square.Size
+
+            Outline.Visible = Vs
             Outline.Color = C3New(0.12, 0.12, 0.12)
             Outline.Transparency = 0.75
+            Outline.Position = Square.Position
+            Outline.Size = Square.Size
 
             return
+        end
+
+        if Square and Outline then
+            if Square.Visible and Outline.Visible then
+                Square.Visible = false
+                Outline.Visible = false
+            end
         end
 
         local TLPos, Visible1 = WorldToViewport((CF * CFNew(Size.X, Size.Y, 0)).Position)
         local TRPos, Visible2 = WorldToViewport((CF * CFNew(-Size.X, Size.Y, 0)).Position)
         local BLPos, Visible3 = WorldToViewport((CF * CFNew(Size.X, -Size.Y, 0)).Position)
         local BRPos, Visible4 = WorldToViewport((CF * CFNew(-Size.X, -Size.Y, 0)).Position)
-
-        local Quad = Box['Quad']
 
         if QUAD_SUPPORTED_EXPLOIT then
             if Visible1 and Visible2 and Visible3 and Visible4 then
@@ -1659,7 +1638,7 @@ function LineBox:Create(Properties)
                 Quad.PointC = V2New(BRPos.X, BRPos.Y)
                 Quad.PointD = V2New(BLPos.X, BLPos.Y)
             else
-                Box['Quad'].Visible = false
+                Quad.Visible = false
             end
         else
             Visible1 = TLPos.Z > 0
@@ -1668,72 +1647,62 @@ function LineBox:Create(Properties)
             Visible4 = BRPos.Z > 0
 
             if Visible1 then
-                Box['TopLeft'].Visible = true
-                Box['TopLeft'].Color = Color
-                Box['TopLeft'].From = V2New(TLPos.X, TLPos.Y)
-                Box['TopLeft'].To = V2New(TRPos.X, TRPos.Y)
+                TL.Visible = true
+                TL.Color = Color
+                TL.From = V2New(TLPos.X, TLPos.Y)
+                TL.To = V2New(TRPos.X, TRPos.Y)
             else
-                Box['TopLeft'].Visible = false
+                TL.Visible = false
             end
             if Visible2 then
-                Box['TopRight'].Visible = true
-                Box['TopRight'].Color = Color
-                Box['TopRight'].From = V2New(TRPos.X, TRPos.Y)
-                Box['TopRight'].To = V2New(BRPos.X, BRPos.Y)
+                TR.Visible = true
+                TR.Color = Color
+                TR.From = V2New(TRPos.X, TRPos.Y)
+                TR.To = V2New(BRPos.X, BRPos.Y)
             else
-                Box['TopRight'].Visible = false
+                TR.Visible = false
             end
             if Visible3 then
-                Box['BottomLeft'].Visible = true
-                Box['BottomLeft'].Color = Color
-                Box['BottomLeft'].From = V2New(BLPos.X, BLPos.Y)
-                Box['BottomLeft'].To = V2New(TLPos.X, TLPos.Y)
+                BL.Visible = true
+                BL.Color = Color
+                BL.From = V2New(BLPos.X, BLPos.Y)
+                BL.To = V2New(TLPos.X, TLPos.Y)
             else
-                Box['BottomLeft'].Visible = false
+                BL.Visible = false
             end
             if Visible4 then
-                Box['BottomRight'].Visible = true
-                Box['BottomRight'].Color = Color
-                Box['BottomRight'].From = V2New(BRPos.X, BRPos.Y)
-                Box['BottomRight'].To = V2New(BLPos.X, BLPos.Y)
+                BR.Visible = true
+                BR.Color = Color
+                BR.From = V2New(BRPos.X, BRPos.Y)
+                BR.To = V2New(BLPos.X, BLPos.Y)
             else
-                Box['BottomRight'].Visible = false
+                BR.Visible = false
             end
-            if Properties and typeof(Properties) == 'table' then
+            if Properties and type(Properties) == 'table' then
                 GetTableData(Properties)(
                     function(i, v)
-                        pcall(Set, Box['TopLeft'], i, v)
-                        pcall(Set, Box['TopRight'], i, v)
-                        pcall(Set, Box['BottomLeft'], i, v)
-                        pcall(Set, Box['BottomRight'], i, v)
+                        TL[i] = v
+                        TR[i] = v
+                        BL[i] = v
+                        BR[i] = v
                     end
                 )
             end
         end
     end
-    function Box:SetVisible(bool)
-        if Options.Show2DBox.Value then
-            pcall(Set, Box['Square'], 'Visible', bool)
-            pcall(Set, Box['OutlineSquare'], 'Visible', bool)
-
-            if Box['Quad'] then
-                pcall(Set, Box['Quad'], 'Visible', bool)
+    function Box:SetVisible(Boolean)
+        for i, v in pairs(self) do
+            if type(v) == 'table' and v.Visible then
+                v.Visible = Boolean
             end
-        else
-            pcall(Set, Box['Quad'], 'Visible', bool)
         end
     end
     function Box:Remove()
         self:SetVisible(false)
-        if Options.Show2DBox.Value then
-            Box['Square']:Remove()
-            Box['OutlineSquare']:Remove()
-
-            if Box['Quad'] then
-                Box['Quad']:Remove()
+        for i, v in pairs(self) do
+            if type(v) == 'table' then
+                v:Remove()
             end
-        else
-            Box['Quad']:Remove()
         end
     end
 
@@ -1777,7 +1746,7 @@ function Signal.new()
 end
 
 function Signal:Connect(Callback)
-    assert(typeof(Callback) == 'function', 'function expected; got ' .. typeof(Callback))
+    assert(type(Callback) == 'function', 'function expected; got ' .. type(Callback))
 
     return self._BindableEvent.Event:Connect(
         function(...)
@@ -1805,7 +1774,7 @@ end
 local function IsMouseOverDrawing(Drawing, MousePosition)
     local TopLeft = Drawing.Position
     local BottomRight = Drawing.Position + Drawing.Size
-    local MousePosition = MousePosition or GetMouseLocation()
+    local MousePosition = MousePosition or GetMouseLocation(UserInputService)
 
     return MousePosition.X > TopLeft.X and MousePosition.Y > TopLeft.Y and MousePosition.X < BottomRight.X and
         MousePosition.Y < BottomRight.Y
@@ -1815,8 +1784,6 @@ local ImageCache = {}
 
 local function SetImage(Drawing, Url)
     local Data = IsSynapse and game:HttpGet(Url) or Url
-
-    print(Drawing, IsSynapse)
 
     Drawing[IsSynapse and 'Data' or 'Uri'] = ImageCache[Url] or Data
     ImageCache[Url] = Data
@@ -1863,7 +1830,7 @@ local function CreateDrawingsTable()
                             return true
                         end
 
-                        if typeof(Properties) == 'table' then
+                        if type(Properties) == 'table' then
                             for Property, Value in pairs(Properties) do
                                 local CanSet = true
 
@@ -1936,14 +1903,10 @@ local function CreateDrawingsTable()
     return setmetatable(Drawings, Metatable)
 end
 
-local Images = {}
-
-task.spawn(
-    function()
-        Images.Ring = 'https://i.imgur.com/q4qx26f.png'
-        Images.Overlay = 'https://i.imgur.com/gOCxbsR.png'
-    end
-)
+local Images = {
+    Ring = 'https://i.imgur.com/q4qx26f.png',
+    Overlay = 'https://i.imgur.com/gOCxbsR.png'
+}
 
 function ColorPicker.new(Position, Size, Color)
     ColorPicker.LastGenerated = tick()
@@ -2159,12 +2122,12 @@ function ColorPicker.new(Position, Size, Color)
     return Picker
 end
 
-function SubMenu:Show(Position, Title, Options)
+function SubMenu:Show(Position, Size, Title, Options)
     self.Open = true
 
     local Visible = true
     local BasePosition = Position
-    local BaseSize = V2New(200, 140)
+    local BaseSize = Size
     local End = BasePosition + BaseSize
 
     self.Bounds = {BasePosition.X, BasePosition.Y, End.X, End.Y}
@@ -2251,7 +2214,7 @@ function SubMenu:Show(Position, Title, Options)
                     {
                         Position = Position,
                         Color = Option.Color,
-                        Radius = IsSynapse and 10 or 10,
+                        Radius = 10,
                         NumSides = 10,
                         Filled = true,
                         Visible = true
@@ -2438,7 +2401,6 @@ local function CreateMenu(NewPosition)
             Visible = true,
             Transparency = 1,
             Outline = true,
-            OutlineOpacity = 0.5
         }
     )
     Menu:AddMenuInstance(
@@ -2452,7 +2414,6 @@ local function CreateMenu(NewPosition)
             Visible = true,
             Transparency = 1,
             Outline = true,
-            OutlineOpacity = 0.5
         }
     )
     Menu:AddMenuInstance(
@@ -2472,7 +2433,7 @@ local function CreateMenu(NewPosition)
 
     GetTableData(Options)(
         function(i, v)
-            if typeof(v.Value) == 'boolean' and not IsStringEmpty(v.Text) and v.Text ~= nil then
+            if type(v.Value) == 'boolean' and not IsStringEmpty(v.Text) and v.Text ~= nil then
                 CPos = CPos + 25
                 local BaseSize = V2New(BaseSize.X, 30)
                 local BasePosition = shared.MenuDrawingData.Instances.Filling.Position + V2New(30, v.Index * 25 - 10)
@@ -2521,7 +2482,6 @@ local function CreateMenu(NewPosition)
                         Color = Colors.Secondary.Light,
                         Transparency = 1,
                         Outline = true,
-                        OutlineOpacity = 0.5
                     }
                 )
             end
@@ -2529,7 +2489,7 @@ local function CreateMenu(NewPosition)
     )
     GetTableData(Options)(
         function(i, v)
-            if typeof(v.Value) == 'number' then
+            if type(v.Value) == 'number' then
                 CPos = CPos + 25
 
                 local BaseSize = V2New(BaseSize.X, 30)
@@ -2570,7 +2530,6 @@ local function CreateMenu(NewPosition)
                         Center = true,
                         Transparency = 1,
                         Outline = true,
-                        OutlineOpacity = 0.5,
                         Visible = true,
                         Color = Colors.White
                     }
@@ -2586,7 +2545,6 @@ local function CreateMenu(NewPosition)
                         Center = true,
                         Transparency = 1,
                         Outline = true,
-                        OutlineOpacity = 0.5,
                         Visible = true,
                         Color = Colors.White,
                         Position = Text.Position
@@ -2660,7 +2618,6 @@ local function CreateMenu(NewPosition)
                         Color = Colors.Secondary.Light,
                         Transparency = 1,
                         Outline = true,
-                        OutlineOpacity = 0.5
                     }
                 )
                 local BindText =
@@ -2675,7 +2632,6 @@ local function CreateMenu(NewPosition)
                         Color = Colors.Secondary.Light,
                         Transparency = 1,
                         Outline = true,
-                        OutlineOpacity = 0.5
                     }
                 )
 
@@ -2687,7 +2643,7 @@ local function CreateMenu(NewPosition)
     )
     GetTableData(Options)(
         function(i, v)
-            if typeof(v.Value) == 'function' then
+            if type(v.Value) == 'function' then
                 local BaseSize = V2New(BaseSize.X, 30)
                 local BasePosition =
                     shared.MenuDrawingData.Instances.Filling.Position + V2New(0, CPos + (25 * v.AllArgs[4]) - 35)
@@ -2719,7 +2675,6 @@ local function CreateMenu(NewPosition)
                         Color = Colors.Secondary.Light,
                         Transparency = 1,
                         Outline = true,
-                        OutlineOpacity = 0.5
                     }
                 )
             end
@@ -2766,13 +2721,6 @@ local function CreateMenu(NewPosition)
 end
 
 CreateMenu()
-task.delay(
-    0.1,
-    function()
-        SubMenu:Show(V2New())
-        SubMenu:Hide()
-    end
-)
 
 shared.UESP_InputChangedCon =
     UserInputService.InputChanged:Connect(
@@ -2810,7 +2758,7 @@ shared.UESP_InputBeganCon =
             }
             if MouseHoveringOver(Values) then
                 DraggingUI = true
-                DragOffset = Menu:GetInstance 'Main'.Position - GetMouseLocation()
+                DragOffset = Menu:GetInstance 'Main'.Position - GetMouseLocation(UserInputService)
             else
                 for i, v in pairs(Sliders) do
                     local Values = {
@@ -2925,7 +2873,6 @@ shared.UESP_InputEndedCon =
                             Character:FindFirstChild 'HumanoidRootPart'
                      then
                         local Head = Character:FindFirstChild 'Head'
-                        local Humanoid = Character:FindFirstChildOfClass 'Humanoid'
 
                         if Head then
                             local Distance = (Camera.CFrame.Position - Head.Position).Magnitude
@@ -2978,7 +2925,7 @@ local function ToggleMenu()
         GetTableData(shared.MenuDrawingData.Instances)(
             function(i, v)
                 if OldData[v] then
-                    pcall(Set, v, 'Visible', true)
+                    v.Visible = true
                 end
             end
         )
@@ -2987,7 +2934,7 @@ local function ToggleMenu()
             function(i, v)
                 OldData[v] = v.Visible
                 if v.Visible then
-                    pcall(Set, v, 'Visible', false)
+                    v.Visible = false
                 end
             end
         )
@@ -3049,7 +2996,7 @@ local CustomTeam = CustomTeams[game.PlaceId]
 
 if CustomTeam ~= nil then
     if CustomTeam.Initialize then
-        pcall(CustomTeam.Initialize)
+        CustomTeam.Initialize()
     end
 
     CheckTeam = CustomTeam.CheckTeam
@@ -3128,9 +3075,9 @@ local function CheckRelative(Position, Instance)
     return Vector
 end
 
-local function RelativeToCenter(Sub)
+local function RelativeToCenter(Number)
     local Relative
-    Relative = (Camera.ViewportSize / 2) - Sub
+    Relative = (Camera.ViewportSize / 2) - Number
 
     return Relative
 end
@@ -3148,7 +3095,7 @@ local function UpdatePlayerData()
     if (tick() - LastRefresh) > (Options.RefreshRate.Value / 1000) then
         LastRefresh = tick()
         if CustomESP and Options.Enabled.Value then
-            local a, b = pcall(CustomESP)
+            CustomESP()
         end
         for i, v in pairs(RenderList.Instances) do
             if v.Instance ~= nil and v.Instance.Parent ~= nil and v.Instance:IsA 'BasePart' then
@@ -3331,7 +3278,6 @@ local function UpdatePlayerData()
                     Size = Options.TextSize.Value,
                     Center = true,
                     Outline = Options.TextOutline.Value,
-                    OutlineOpacity = 1,
                     Visible = true
                 }
             Data.Instances['DistanceHealthTag'] =
@@ -3340,7 +3286,6 @@ local function UpdatePlayerData()
                     Size = Options.TextSize.Value - 1,
                     Center = true,
                     Outline = Options.TextOutline.Value,
-                    OutlineOpacity = 1,
                     Visible = true
                 }
             Data.Instances['Arrow'] =
@@ -3369,7 +3314,7 @@ local function UpdatePlayerData()
 
                 local Dead = (Humanoid and Humanoid:GetState().Name == 'Dead')
                 if type(GetAliveState) == 'function' then
-                    Dead = (not GetAliveState(v, Character))
+                    Dead = (not GetAliveState(v))
                 end
 
                 if Character ~= nil and Head and HumanoidRootPart and not Dead then
@@ -3450,15 +3395,10 @@ local function UpdatePlayerData()
                             NameTag.Color = Color
                             NameTag.OutlineColor = C3New(0.05, 0.05, 0.05)
                             NameTag.Transparency = 0.85
+                            NameTag.Font = Font or 0
 
                             NameTag.Text = v.Name .. (Options.ShowDisplay.Value and ' [' .. v.DisplayName .. ']' or '')
                             NameTag.Text = NameTag.Text .. (CustomPlayerTag and CustomPlayerTag(v) or '')
-
-                            for x, y in pairs(Fonts) do
-                                if y then
-                                    NameTag.Font = Drawing.Fonts[x]
-                                end
-                            end
                         else
                             NameTag.Visible = false
                         end
@@ -3523,17 +3463,17 @@ local function UpdatePlayerData()
                         if Options.ShowBoxes.Value and Vis and HumanoidRootPart then
                             local Body = {
                                 Head,
-                                Character:FindFirstChild 'Left Leg' or Character:FindFirstChild 'LeftLowerLeg',
-                                Character:FindFirstChild 'Right Leg' or Character:FindFirstChild 'RightLowerLeg',
-                                Character:FindFirstChild 'Left Arm' or Character:FindFirstChild 'LeftLowerArm',
-                                Character:FindFirstChild 'Right Arm' or Character:FindFirstChild 'RightLowerArm'
+                                FindFirstChild(Character, 'Left Leg') or FindFirstChild(Character, 'LeftLowerLeg'),
+                                FindFirstChild(Character, 'Right Leg') or FindFirstChild(Character, 'RightLowerLeg'),
+                                FindFirstChild(Character, 'Left Arm') or FindFirstChild(Character, 'LeftLowerArm'),
+                                FindFirstChild(Character, 'Right Arm') or FindFirstChild(Character, 'RightLowerArm')
                             }
                             Box:Update(
                                 HumanoidRootPart.CFrame,
                                 V3New(2, 3, 1) * (Scale * 2),
                                 Color,
                                 nil,
-                                Options.Show2DBox.Value and Body
+                                Options.Show2DBox.Value and not TFind(Body, false) and Body
                             )
                         else
                             Box:SetVisible(false)
@@ -3564,15 +3504,6 @@ local function UpdatePlayerData()
                 Arrow.Visible = false
 
                 Box:SetVisible(false)
-            end
-
-            if QUAD_SUPPORTED_EXPLOIT then
-                if Options.Show2DBox.Value then
-                    pcall(Set, Box['Quad'], 'Visible', false)
-                else
-                    pcall(Set, Box['OutlineSquare'], 'Visible', false)
-                    pcall(Set, Box['Square'], 'Visible', false)
-                end
             end
 
             shared.InstanceData[v.Name] = Data
@@ -3636,7 +3567,7 @@ local function Update()
     end
 
     if Options.MenuOpen.Value and MenuLoaded then
-        local MLocation = GetMouseLocation()
+        local MLocation = GetMouseLocation(UserInputService)
         shared.MenuDrawingData.Instances.Main.Color = Color3.fromHSV(tick() * 24 % 255 / 255, 1, 1)
         local MainInstance = Menu:GetInstance 'Main'
 
@@ -3675,7 +3606,7 @@ local function Update()
             end
         end
         if MouseHeld then
-            local MousePos = GetMouseLocation()
+            local MousePos = GetMouseLocation(UserInputService)
 
             if Dragging then
                 DraggingWhat.Slider.Position =
