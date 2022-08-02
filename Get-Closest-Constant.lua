@@ -1,7 +1,8 @@
+local a = game:GetService('Players').LocalPlayer;
+local b = debug.getconstants;
+local c = getscriptclosure;
+
 return function(x, y)
-    local a = game:GetService('Players').LocalPlayer;
-    local b = debug.getconstants;
-    local c = getscriptclosure;
     local d;
 
     for _, v in ipairs(a:GetDescendants()) do
@@ -22,5 +23,5 @@ return function(x, y)
         error(string.format('No LocalScripts found with >= %s constants!', tostring(x)));
     end
 
-    return (d)
+    return (d);
 end
